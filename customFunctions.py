@@ -98,6 +98,8 @@ def evaluate_deriv(params, ansatz, observable, index, estimator):
 #            Función para la obtener las varianzas
 # ====================================================================
 def get_variances_data(observable, ansatz, num_params, index, num_shots=1000):
+    estimator = Estimator()
+
     # Lista para guardar los valores esperados
     value_list = []
 
@@ -200,8 +202,6 @@ def variance_vs_nQubits(ansantz_function, minQubits, maxQubits, base_observable,
     print_logo()
 
     for i in range(minQubits, maxQubits+1):
-
-        estimator = Estimator()
         
         current_observable=expand_observable(base_observable, i)
         ansatz_circuit, num_params = ansantz_function(i)
