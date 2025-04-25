@@ -124,7 +124,7 @@ def get_variances_data(observable, ansatz, num_params, index, num_shots=1000):
 # ====================================================================
 #            Función para minimización VQE
 # ====================================================================
-def VQE_minimization(ansantz_function, minQubits, maxQubits, base_observable, index):
+def VQE_minimization_BP(ansantz_function, minQubits, maxQubits, base_observable, index):
 
     print_logo()
 
