@@ -5,7 +5,6 @@ from qiskit_nature.second_q.mappers import JordanWignerMapper
 
 import pickle
 
-
 geometry =  f"H 0.0 0.0 0.725/2; H 0.0 0.0 -0.725/2"
 
 
