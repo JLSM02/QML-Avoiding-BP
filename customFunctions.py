@@ -91,6 +91,7 @@ def evaluate_deriv(params, ansatz, observable, index, estimator):
     deriv = 0.5 * (value_plus - value_minus)
     
     return deriv
+   
 
 
 
@@ -114,7 +115,7 @@ def get_variances_data(observable, ansatz, num_params, index, num_shots=1000):
         deriv = evaluate_deriv(rand_param_vector, ansatz, observable, index, estimator)
 
         value_list.append(value)
-        value_list.append(deriv)
+        deriv_list.append(deriv)
 
     return np.var(value_list), np.var(deriv_list)
 
@@ -210,11 +211,11 @@ def variance_vs_nQubits(ansantz_function, minQubits, maxQubits, base_observable,
         print("\n=====================================================")
         print(f"Calculando varianzas con {i} qubits.\n")
         
-        value, deriv = get_variances_data(current_observable, ansatz_circuit, num_params, index, shots)
-        print(f"Varianza del valor esperado: {value}")
-        print(f"Varianza de la derivada: {deriv}")
+        var_value, var_deriv = get_variances_data(current_observable, ansatz_circuit, num_params, index, shots)
+        print(f"Varianza del valor esperado: {var_value}")
+        print(f"Varianza de la derivada: {var_deriv}")
 
-        data.append([value, deriv])
+        data.append([var_value, var_deriv, i])
 
     data = np.array(data)
     # Grafica concentracion del resultado y su derivada
