@@ -5,33 +5,31 @@ from qiskit_nature.second_q.mappers import JordanWignerMapper
 
 import pickle
 
+def hamiltonians(geometry,dist):
+    # Configuramos el driver PySCF
+    driver = PySCFDriver(atom=geometry, basis='sto3g')
 
-geometry =  f"H 0.0 0.0 0.725/2; H 0.0 0.0 -0.725/2"
+    # Ejecutamos el driver para obtener el problema de la estructura electrónica
+    es_problem = driver.run()
 
+    # Construimos el Hamiltoniano después de la segunda cuantización
+    hamiltonian = es_problem.second_q_ops()[0]
 
-# Configuramos el driver PySCF
-driver = PySCFDriver(atom=geometry, basis='sto3g')
+    # Aplicamos las transformaciones de Jordan-Wigner
+    mapper = JordanWignerMapper()
+    hamiltonian = mapper.map(hamiltonian)
 
-# Ejecutamos el driver para obtener el problema de la estructura electrónica
-es_problem = driver.run()
+    with open(f"VQE/H2/data/hamiltonian{dist:.3f}.pkl", "wb") as f:
+        pickle.dump(hamiltonian, f)
 
-# Construimos el Hamiltoniano después de la segunda cuantización
-hamiltonian = es_problem.second_q_ops()[0]
+    # Repulsión nuclear
+    nuclear_repulsion = es_problem.nuclear_repulsion_energy
 
-# Aplicamos las transformaciones de Jordan-Wigner
-mapper = JordanWignerMapper()
+    with open(f"VQE/H2/data/nuclear_repulsion{dist:.3f}.pkl", "wb") as f:
+        pickle.dump(nuclear_repulsion, f)
 
-hamiltonian = mapper.map(hamiltonian)
-
-
-print(f"Hamiltoniano: \n{hamiltonian}")
-with open(f"VQE/H2/data/hamiltonian.pkl", "wb") as f:
-    pickle.dump(hamiltonian, f)
-
-
-nuclear_repulsion = es_problem.nuclear_repulsion_energy
-
-
-print(f"Energía nuclear: {nuclear_repulsion}")
-with open(f"VQE/H2/data/nuclear_repulsion.pkl", "wb") as f:
-    pickle.dump(nuclear_repulsion, f)
+distances = np.linspace(0.25, 4, 25)
+for dist in distances:
+    print(f"Calculando para distancia {dist:.3f} Å")
+    geometry = f"H 0.0 0.0 {-dist/2}; H 0.0 0.0 {dist/2}"
+    hamiltonians(geometry,dist)
