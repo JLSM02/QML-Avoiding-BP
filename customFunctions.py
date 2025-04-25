@@ -220,8 +220,8 @@ def variance_vs_nQubits(ansantz_function, minQubits, maxQubits, base_observable,
     data = np.array(data)
     # Grafica concentracion del resultado y su derivada
     fig, ax = plt.subplots()
-    ax.scatter(data[:,2], data[:,1], label="Var(E)")
-    ax.scatter(data[:,2], data[:,0], label=r"Var($\partial$E)")
+    ax.scatter(data[:,2], data[:,0], label="Var(E)")
+    ax.scatter(data[:,2], data[:,1], label=r"Var($\partial$E)")
     ax.set_xlabel("N qubits")
     ax.set_ylabel("var(E)")
     ax.set_title(f"BP en VQE")
