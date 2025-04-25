@@ -30,6 +30,5 @@ def hamiltonians(geometry,dist):
 
 distances = np.linspace(0.25, 4, 25)
 for dist in distances:
-    print(f"Calculando para distancia {dist:.3f} Å")
     geometry = f"H 0.0 0.0 {-dist/2}; H 0.0 0.0 {dist/2}"
     hamiltonians(geometry,dist)
