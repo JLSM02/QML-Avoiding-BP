@@ -210,11 +210,11 @@ def variance_vs_nQubits(ansantz_function, minQubits, maxQubits, base_observable,
         print("\n=====================================================")
         print(f"Calculando varianzas con {i} qubits.\n")
         
-        result = get_variances_data(current_observable, ansatz_circuit, num_params, index, shots)
-        print(f"Varianza del valor esperado: {result[0]}")
-        print(f"Varianza de la derivada: {result[1]}")
+        value, deriv = get_variances_data(current_observable, ansatz_circuit, num_params, index, shots)
+        print(f"Varianza del valor esperado: {value}")
+        print(f"Varianza de la derivada: {deriv}")
 
-        data.append(result)
+        data.append([value, deriv])
 
     data = np.array(data)
     # Grafica concentracion del resultado y su derivada
