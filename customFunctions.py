@@ -152,6 +152,7 @@ def VQE_minimization_BP(ansantz_function, minQubits, maxQubits, base_observable,
 
         # If index = None, the derivative is not calculated
         if index==None:
+            print("No give the derivative")
             def cost_func(params, ansatz, observable, index, estimator):
 
                 cost = evaluate_observable(params, ansatz, observable, estimator)
