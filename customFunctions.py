@@ -293,7 +293,7 @@ def variance_vs_nQubits(ansantz_function, minQubits: int, maxQubits: int, base_o
         current_observable=expand_observable(base_observable, i)
         ansatz_circuit, num_params = ansantz_function(i)
 
-        var_value, var_deriv = get_variances_data(current_observable, ansatz_circuit, num_params, index, shots)
+        var_value, var_deriv = get_variances_data(num_params, ansatz_circuit, current_observable, index, shots)
         # Información sobre la iteración actual
         if print_info:
             print("\n=====================================================")
