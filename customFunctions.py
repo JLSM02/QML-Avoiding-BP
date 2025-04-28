@@ -10,7 +10,17 @@ from scipy.optimize import minimize
 # ====================================================================
 #                 Función para expandir el observable
 # ====================================================================
-def expand_observable(op, total_qubits):
+def expand_observable(op: SparsePauliOp, total_qubits: int):
+    """
+    Expands the given observable, adding product with identity matrix in order to be measured using the given number of qubits.
+
+    Args:
+        op (SparsePauliOp): Operator to be expanded.
+        total_qubits (int): Number of qubits to be used.
+
+    Returns:
+        (SparsePauliOp): Expanded operator.
+    """
     expanded_paulis = []
     for pauli, coeff in zip(op.paulis, op.coeffs):
         pauli_str = pauli.to_label()
@@ -26,9 +36,19 @@ def expand_observable(op, total_qubits):
 # ====================================================================
 #                 Función construir un deep ansatz
 # ====================================================================
-def build_deep_ansatz(num_qubits):
-    """Crea un circuito con L = 10n capas de ansatz para n qubits."""
-    L = 10 * num_qubits  # número de capas
+def build_deep_ansatz(layers_per_qubit: int, num_qubits: int):
+    """
+    Builds a deep ansatz.
+
+    Args:
+        layers_per_qubit (int): Number of layers to add to the circuit per qubit.
+        num_qubits (int): Number of qubits to be used in the circuit.
+
+    Returns:
+        qc (QuantumCircuit): Resulting Qiskit circuit implementing the ansantz.
+        num_params (int): Number of parameters used in the ansatz
+    """
+    L = layers_per_qubit * num_qubits  # número de capas
     qc = QuantumCircuit(num_qubits)
     qc.ry(np.pi/4, range(num_qubits))
     qc.barrier()
@@ -54,7 +74,7 @@ def build_deep_ansatz(num_qubits):
         layer(qc, theta_layer)
         qc.barrier()
 
-    # Devuelve el cirvuito y el numero de parametros
+    # Devuelve el circuito y el numero de parametros
     num_params =  len(thetas)*num_qubits
     return qc, num_params
 
@@ -64,6 +84,18 @@ def build_deep_ansatz(num_qubits):
 #             Función para calcular el valor esperado
 # ====================================================================
 def evaluate_observable(params, ansatz, observable, estimator):
+    """
+    Calculates the expecter value of an observable, using Qiskit.
+
+    Args:
+        params (Numpy 1D array): The list of parameters to be used in the calculation.
+        ansatz (QuantumCircuit): The Qiskit circuit containing the ansatz, the parametrized quantum circuit.
+        observable (SparsePauliOp): The observable to be measured.
+        estimator (Estimator): Qiskit estimator to use in the calculations.
+
+    Returns:
+        (float): Expectation value of the observable.
+    """
     job = estimator.run([ansatz], [observable], [params])
     result = job.result()
     expected_value = result.values[0]
@@ -76,6 +108,19 @@ def evaluate_observable(params, ansatz, observable, estimator):
 #            Función para la derivada del valor esperado
 # ====================================================================
 def evaluate_deriv(params, ansatz, observable, index, estimator):
+    """
+    Computes the partial derivative of an observable with respect to the given parameter.
+
+    Args:
+        params (Numpy 1D array): The list of parameters to be used in the calculation.
+        ansatz (QuantumCircuit): The Qiskit circuit containing the ansatz, the parametrized quantum circuit.
+        observable (SparsePauliOp): The observable to be measured.
+        index (int): With respect to which parameter the derivative will be taken.
+        estimator (Estimator): Qiskit estimator to use in the calculations.
+
+    Returns:
+        (float): Expectation value of the derivative of the observable.
+    """
 
     # Desplazamientos para parameter-shift
     shifted_plus = params.copy()
@@ -98,7 +143,22 @@ def evaluate_deriv(params, ansatz, observable, index, estimator):
 # ====================================================================
 #            Función para la obtener las varianzas
 # ====================================================================
-def get_variances_data(observable, ansatz, num_params, index, num_shots=1000):
+def get_variances_data(num_params, ansatz, observable, index, num_shots=1000):
+    """
+    Get the variances of the expectation value of an observable and its derivative.
+
+    Args:
+        num_params (int): The number of parameters to be used in the calculation.
+        ansatz (QuantumCircuit): The Qiskit circuit containing the ansatz, the parametrized quantum circuit.
+        observable (SparsePauliOp): The observable to be measured.
+        index (int): With respect to which parameter the derivative will be taken.
+        num_shots (int): Number of samples taken to compute the variances.
+
+    Returns:
+        (float): Variance of the expectation value of the observable.
+        (float): Variance of the expectation value of the derivative.
+    """
+    
     estimator = Estimator()
 
     # Lista para guardar los valores esperados
@@ -124,8 +184,21 @@ def get_variances_data(observable, ansatz, num_params, index, num_shots=1000):
 # ====================================================================
 #            Función para minimización VQE
 # ====================================================================
-def VQE_minimization_BP(ansantz_function, minQubits: int, maxQubits: int, base_observable, index: list[int]):
+def VQE_minimization_BP(ansantz_function, minQubits: int, maxQubits: int, base_observable, index: list[int], initial_guess: str = "zero", minimizer: str = "COBYLA"):
+    """
+    Compute the VQE algorithm, .
 
+    Args:
+        num_params (int): The number of parameters to be used in the calculation.
+        ansatz (QuantumCircuit): The Qiskit circuit containing the ansatz, the parametrized quantum circuit.
+        observable (SparsePauliOp): The observable to be measured.
+        index (int): With respect to which parameter the derivative will be taken.
+        num_shots (int): Number of samples taken to compute the variances.
+
+    Returns:
+        (float): Variance of the expectation value of the observable.
+        (float): Variance of the expectation value of the derivative.
+    """
     for i in range(minQubits, maxQubits+1):
 
         estimator = Estimator()
@@ -134,7 +207,14 @@ def VQE_minimization_BP(ansantz_function, minQubits: int, maxQubits: int, base_o
         ansatz_circuit, num_params = ansantz_function(i)
 
         # Parámetros iniciales
-        initial_param_vector = np.zeros(num_params)
+        if initial_guess == "rand":
+            initial_param_vector = np.rand.rand(num_params)
+        elif initial_guess == "zero":
+            initial_param_vector = np.zeros(num_params)
+        elif initial_guess is np.ndarray():
+            initial_param_vector = initial_guess
+        else:
+            print("Invalid initial guess, using all parameters as zero")
 
         # Información sobre la iteración actual
         print("\n=====================================================")
@@ -177,7 +257,7 @@ def VQE_minimization_BP(ansantz_function, minQubits: int, maxQubits: int, base_o
             cost_func,
             initial_param_vector,
             args=(ansatz_circuit, current_observable, index, estimator),
-            method="COBYLA",
+            method=minimizer,
         )
 
         # Graficar evolución del costo
@@ -186,11 +266,11 @@ def VQE_minimization_BP(ansantz_function, minQubits: int, maxQubits: int, base_o
 
         if index == "all":
             for j in range(num_params):
-                ax.plot(range(cost_history_dict["iters"]), cost_history_dict["deriv_history"][j], label=rf"$\partial_{j}\langle O\rangle$")
+                ax.plot(range(cost_history_dict["iters"]), cost_history_dict["deriv_history"][j], label=rf"$\partial_{{j}}\langle O\rangle$")
 
         else:
             for j in index:
-                ax.plot(range(cost_history_dict["iters"]), cost_history_dict["deriv_history"][j], label=rf"$\partial_{j}\langle O\rangle$")
+                ax.plot(range(cost_history_dict["iters"]), cost_history_dict["deriv_history"][j], label=rf"$\partial_{{j}}\langle O\rangle$")
 
         ax.set_xlabel("Iteraciones")
         ax.set_ylabel(r"$\langle O\rangle$")
