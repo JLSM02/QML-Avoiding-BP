@@ -143,7 +143,7 @@ def evaluate_deriv(params, ansatz, observable, index, estimator):
 # ====================================================================
 #            Función para la obtener las varianzas
 # ====================================================================
-def get_variances_data(num_params, ansatz, observable, index, num_shots=1000):
+def get_variances_data(num_params, ansatz, observable, index, num_shots=100):
     """
     Get the variances of the expectation value of an observable and its derivative.
 
@@ -284,7 +284,7 @@ def VQE_minimization_BP(ansatz_function, minQubits: int, maxQubits: int, base_ob
 # ====================================================================
 #            Función para varianza de gradientes
 # ====================================================================
-def variance_vs_nQubits(ansantz_function, minQubits: int, maxQubits: int, base_observable, index: int, num_shots, print_info: bool=True, plot_info: bool=True):
+def variance_vs_nQubits(ansantz_function, minQubits: int, maxQubits: int, base_observable, index: int, num_shots=100, print_info: bool=True, plot_info: bool=True):
     """
     Obtain the variances of the expectation value and the given derivative using different numbers of qubits.
 
