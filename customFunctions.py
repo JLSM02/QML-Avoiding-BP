@@ -184,31 +184,29 @@ def get_variances_data(num_params, ansatz, observable, index, num_shots=1000):
 # ====================================================================
 #            Función para minimización VQE
 # ====================================================================
-def VQE_minimization_BP(ansantz_function, minQubits: int, maxQubits: int, base_observable, index: list[int], initial_guess: str = "zero", minimizer: str = "COBYLA"):
+def VQE_minimization_BP(ansatz_function, minQubits: int, maxQubits: int, base_observable, index: list[int], initial_guess: str = "zero", minimizer: str = "COBYLA"):
     """
-    Compute the VQE algorithm, .
+    Compute the VQE algorithm using different numbers of qubits, then plot the minimization progess and the derivatives information.
 
     Args:
-        num_params (int): The number of parameters to be used in the calculation.
-        ansatz (QuantumCircuit): The Qiskit circuit containing the ansatz, the parametrized quantum circuit.
-        observable (SparsePauliOp): The observable to be measured.
-        index (int): With respect to which parameter the derivative will be taken.
-        num_shots (int): Number of samples taken to compute the variances.
-
-    Returns:
-        (float): Variance of the expectation value of the observable.
-        (float): Variance of the expectation value of the derivative.
+        ansatz_function (method): A function defined as follows: ansatz_function(N_qubits (int)) -> qc (QuantumCircuit), num_params (int)
+        minQubits (int): The smallest number of qubits used.
+        maxQubits (int): The greatest number of qubits used.
+        base_observable (SparsePauliOp): The observable to be measured in its minimal form, it should use minQubits number of qubits.
+        index (list[int] or str): With respect to which parameters the derivative will be taken. If given "all", it calculates all the derivatives.
+        initial_guess (str or NumPy 1D array): "zero" initial guess with all parameters equal to cero, "rand" -> random initial guess. 1D Array -> the initial guess. default="zero"
+        minimizer (str): scipy.optimize.minimize possible optimization methods, default="COBYLA"
     """
     for i in range(minQubits, maxQubits+1):
 
         estimator = Estimator()
         
-        current_observable=expand_observable(base_observable, i)
-        ansatz_circuit, num_params = ansantz_function(i)
+        current_observable = expand_observable(base_observable, i)
+        ansatz_circuit, num_params = ansatz_function(i)
 
         # Parámetros iniciales
         if initial_guess == "rand":
-            initial_param_vector = np.rand.rand(num_params)
+            initial_param_vector = np.random.random(num_params)
         elif initial_guess == "zero":
             initial_param_vector = np.zeros(num_params)
         elif initial_guess is np.ndarray():
@@ -282,18 +280,40 @@ def VQE_minimization_BP(ansantz_function, minQubits: int, maxQubits: int, base_o
         print("=====================================================")
 
 
+
 # ====================================================================
 #            Función para varianza de gradientes
 # ====================================================================
-def variance_vs_nQubits(ansantz_function, minQubits: int, maxQubits: int, base_observable, index: int, shots, print_info: bool=True, plot_info: bool=True):
-    data = []
+def variance_vs_nQubits(ansantz_function, minQubits: int, maxQubits: int, base_observable, index: int, num_shots, print_info: bool=True, plot_info: bool=True):
+    """
+    Obtain the variances of the expectation value and the given derivative using different numbers of qubits.
+
+    Args:
+        ansatz_function (method): A function defined as follows: ansatz_function(N_qubits (int)) -> qc (QuantumCircuit), num_params (int)
+        minQubits (int): The smallest number of qubits used.
+        maxQubits (int): The greatest number of qubits used.
+        base_observable (SparsePauliOp): The observable to be measured in its minimal form, it should use minQubits number of qubits.
+        index (int): With respect to which parameter the derivative will be taken.
+        num_shots (int): Number of samples taken to compute the variances.
+        print_info (bool): If the results will be printed
+        plot_info (bool): If the results will be plotted
+
+
+    Returns:
+        (Dictionary): "n_qubits" : (list[int]), "var_value" : (list[float]), "var_deriv" : (list[float])"
+    """
+    data = {
+        "n_qubits" : [],
+        "var_value" : [],
+        "var_deriv" : []
+    }
 
     for i in range(minQubits, maxQubits+1):
         
         current_observable=expand_observable(base_observable, i)
         ansatz_circuit, num_params = ansantz_function(i)
 
-        var_value, var_deriv = get_variances_data(num_params, ansatz_circuit, current_observable, index, shots)
+        var_value, var_deriv = get_variances_data(num_params, ansatz_circuit, current_observable, index, num_shots)
         # Información sobre la iteración actual
         if print_info:
             print("\n=====================================================")
@@ -301,9 +321,9 @@ def variance_vs_nQubits(ansantz_function, minQubits: int, maxQubits: int, base_o
             print(f"Varianza del valor esperado: {var_value}")
             print(f"Varianza de la derivada: {var_deriv}")
 
-        data.append([var_value, var_deriv, i])
-
-    data = np.array(data)
+        data["n_qubits"].append(i)
+        data["var_value"].append(var_value)
+        data["var_deriv"].append(var_deriv)
 
     # Grafica concentracion del resultado y su derivada
     if plot_info:
