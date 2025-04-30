@@ -185,7 +185,7 @@ def get_variances_data(num_params, ansatz, observable, index, num_shots=100):
 # ====================================================================
 #            Función para minimización VQE
 # ====================================================================
-def VQE_minimization_BP(ansatz_function, minQubits: int, maxQubits: int, base_observable, index: list[int], initial_guess: str = "zero", minimizer: str = "COBYLA"):
+def VQE_minimization_BP(ansatz_function, minQubits: int, maxQubits: int, base_observable, index: list[int], initial_guess: str = "zero", minimizer: str = "COBYLA", print_info: bool = True, plot_info: bool = True):
     """
     Compute the VQE algorithm using different numbers of qubits, then plot the minimization progess and the derivatives information.
 
@@ -195,9 +195,20 @@ def VQE_minimization_BP(ansatz_function, minQubits: int, maxQubits: int, base_ob
         maxQubits (int): The greatest number of qubits used.
         base_observable (SparsePauliOp): The observable to be measured in its minimal form, it should use minQubits number of qubits.
         index (list[int] or str): With respect to which parameters the derivative will be taken. If given "all", it calculates all the derivatives.
-        initial_guess (str or NumPy 1D array): "zero" initial guess with all parameters equal to cero, "rand" -> random initial guess. 1D Array -> the initial guess. default="zero"
-        minimizer (str): scipy.optimize.minimize possible optimization methods, default="COBYLA"
+        initial_guess (str or NumPy 1D array): "zero" initial guess with all parameters equal to cero, "rand" -> random initial guess. 1D Array -> the initial guess. default="zero".
+        minimizer (str): scipy.optimize.minimize possible optimization methods, default="COBYLA".
+    
+    Returns:
+        (Dictionary): 
+            "minimum_values" : (list[float]): A list containing the minimum found for every number of qubits.
+            "n_qubits" : (list[int]): A list containing the number of qubits used.
     """
+
+    data = {
+        "n_qubits": [],
+        "minimum_values": []
+    }
+
     for i in range(minQubits, maxQubits+1):
 
         estimator = Estimator()
@@ -216,9 +227,10 @@ def VQE_minimization_BP(ansatz_function, minQubits: int, maxQubits: int, base_ob
             print("Invalid initial guess, using all parameters as zero")
 
         # Información sobre la iteración actual
-        print("\n=====================================================")
-        print(f"Preparando ejecución para {i} qubits.")
-        print(f"Se usarán {num_params} parámetros")
+        if print_info:
+            print("\n=====================================================")
+            print(f"Preparando ejecución para {i} qubits.")
+            print(f"Se usarán {num_params} parámetros")
 
         # Diccionario para almacenar la evolución del costo
         cost_history_dict = {
@@ -259,27 +271,34 @@ def VQE_minimization_BP(ansatz_function, minQubits: int, maxQubits: int, base_ob
             method=minimizer,
         )
 
+        # Guardamos los resultados en diccionario
+        data["n_qubits"].append(i)
+        data["minimum_values"].append(res.fun)
+
         # Graficar evolución del costo
-        fig, ax = plt.subplots()
-        ax.plot(range(cost_history_dict["iters"]), cost_history_dict["cost_history"], label=r"$\langle O\rangle$")
+        if plot_info:
+            fig, ax = plt.subplots()
+            ax.plot(range(cost_history_dict["iters"]), cost_history_dict["cost_history"], label=r"$\langle O\rangle$")
 
-        if index == "all":
-            for j in range(num_params):
-                ax.plot(range(cost_history_dict["iters"]), cost_history_dict["deriv_history"][j], label=rf"$\partial_{{{j}}}\langle O\rangle$")
+            if index == "all":
+                for j in range(num_params):
+                    ax.plot(range(cost_history_dict["iters"]), cost_history_dict["deriv_history"][j], label=rf"$\partial_{{{j}}}\langle O\rangle$")
 
-        else:
-            for j in index:
-                ax.plot(range(cost_history_dict["iters"]), cost_history_dict["deriv_history"][j], label=rf"$\partial_{{{j}}}\langle O\rangle$")
+            else:
+                for j in index:
+                    ax.plot(range(cost_history_dict["iters"]), cost_history_dict["deriv_history"][j], label=rf"$\partial_{{{j}}}\langle O\rangle$")
 
-        ax.set_xlabel("Iteraciones")
-        ax.set_ylabel(r"$\langle O\rangle$")
-        ax.set_title(f"Minimización para {i} qubits")
-        plt.legend()
-        plt.show()
+            ax.set_xlabel("Iteraciones")
+            ax.set_ylabel(r"$\langle O\rangle$")
+            ax.set_title(f"Minimización para {i} qubits")
+            plt.legend()
+            plt.show()
 
-        print(f"Fin ejecución con {i} qubits. Mínimo encontrado: {res.fun}")
-        print("=====================================================")
+        if plot_info:
+            print(f"Fin ejecución con {i} qubits. Mínimo encontrado: {res.fun}")
+            print("=====================================================")
 
+    return data
 
 
 # ====================================================================
@@ -304,7 +323,7 @@ def variance_vs_nQubits(ansantz_function, minQubits: int, maxQubits: int, base_o
         (Dictionary): 
             "n_qubits" : (list[int])
             "var_value" : (list[float])
-            "var_deriv" : (list[float])"
+            "var_deriv" : (list[float])
             "value_slope" : (int)
             "value_ord" : (int)
             "value_rsquare" : (int)
