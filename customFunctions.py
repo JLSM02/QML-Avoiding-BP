@@ -364,7 +364,7 @@ def variance_vs_nQubits(ansantz_function, minQubits: int, maxQubits: int, base_o
 
             print("\n=====================================================")
             print(f"Pendiente para derivada: {data['deriv_slope']}.")
-            print(f"R^2 para valor esperado: {data['deriv_rsquare']}.")
+            print(f"R^2 para derivada: {data['deriv_rsquare']}.")
     
     # Grafica concentracion del resultado y su derivada
     if plot_info:
