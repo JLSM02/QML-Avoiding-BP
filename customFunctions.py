@@ -313,11 +313,14 @@ def variance_vs_nQubits(ansantz_function, minQubits: int, maxQubits: int, base_o
         current_observable=expand_observable(base_observable, i)
         ansatz_circuit, num_params = ansantz_function(i)
 
-        var_value, var_deriv = get_variances_data(num_params, ansatz_circuit, current_observable, index, num_shots)
-        # Información sobre la iteración actual
         if print_info:
             print("\n=====================================================")
             print(f"Calculando varianzas con {i} qubits.\n")
+        
+        var_value, var_deriv = get_variances_data(num_params, ansatz_circuit, current_observable, index, num_shots)
+        
+        # Información sobre la iteración actual
+        if print_info:
             print(f"Varianza del valor esperado: {var_value}")
             print(f"Varianza de la derivada: {var_deriv}")
 
