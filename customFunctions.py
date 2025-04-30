@@ -5,6 +5,7 @@ from qiskit.circuit import QuantumCircuit, Parameter
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.primitives import Estimator
 from scipy.optimize import minimize
+from scipy.stats import linregress
 
 
 # ====================================================================
@@ -300,12 +301,27 @@ def variance_vs_nQubits(ansantz_function, minQubits: int, maxQubits: int, base_o
 
 
     Returns:
-        (Dictionary): "n_qubits" : (list[int]), "var_value" : (list[float]), "var_deriv" : (list[float])"
+        (Dictionary): 
+            "n_qubits" : (list[int])
+            "var_value" : (list[float])
+            "var_deriv" : (list[float])"
+            "value_slope" : (int)
+            "value_ord" : (int)
+            "value_rsquare" : (int)
+            "deriv_slope" : (int)
+            "deriv_ord" : (int)
+            "deriv_rsquare" : (int)
     """
     data = {
         "n_qubits" : [],
         "var_value" : [],
-        "var_deriv" : []
+        "var_deriv" : [],
+        "value_slope" : 0,
+        "value_ord" : 0,
+        "value_rsquare" : 0,
+        "deriv_slope" : 0,
+        "deriv_ord" : 0,
+        "deriv_rsquare" : 0
     }
 
     for i in range(minQubits, maxQubits+1):
@@ -328,16 +344,47 @@ def variance_vs_nQubits(ansantz_function, minQubits: int, maxQubits: int, base_o
         data["var_value"].append(var_value)
         data["var_deriv"].append(var_deriv)
 
+    # Regresiones
+    value_regress = linregress(data["var_value"], np.log(data["n_qubits"]))
+    deriv_regress = linregress(data["var_deriv"], np.log(data["n_qubits"]))
+
+    data["value_slope"] = value_regress[0]
+    data["value_ord"] = value_regress[1]
+    data["value_rsquare"] = value_regress[2]
+
+    data["deriv_slope"] = value_regress[0]
+    data["deriv_ord"] = value_regress[1]
+    data["deriv_rsquare"] = value_regress[2]
+
+
+
+    if print_info:
+        print(print("\n====================================================="))
+        print(f"Pendiente para valor esperado: {data["value_slope"]}.")
+        print(rf"$R^2$ para valor esperado: {data["value:rsquare"]}.")
+
+        print(print("\n====================================================="))
+        print(f"Pendiente para derivada: {data["deriv_slope"]}.")
+        print(rf"$R^2$ para valor esperado: {data["deriv_rsquare"]}.")
+    
     # Grafica concentracion del resultado y su derivada
     if plot_info:
         fig, ax = plt.subplots()
+        # Scatter
         ax.scatter(data["n_qubits"], data["var_value"], label=r"Var($\langle O\rangle$)")
         ax.scatter(data["n_qubits"], data["var_deriv"], label=rf"Var($\partial_{index}\langle O\rangle$)")
+        # Tendencias
+        base = np.linspace(2, maxQubits, 100)
+
+        ax.plot(base, np.exp(data["value_slope"]*base+data["value_ord"]), color="black", label=r"Tendencia: Var($\langle O\rangle$)")
+        ax.plot(base, np.exp(data["deriv_slope"]*base+data["deriv_ord"]), color="black", label=rf"Tendencia: Var($\partial_{index}\langle O\rangle$)")
+        # Ajustes
         ax.set_xlabel(r"$N$ qubits")
         ax.set_title(rf"BP en VQE, variando el parámetro $\theta_{index}$")
         ax.set_yscale("log")
         ax.legend()
         plt.show()
+
 
     return data
 
