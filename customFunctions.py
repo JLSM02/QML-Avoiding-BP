@@ -265,11 +265,11 @@ def VQE_minimization_BP(ansatz_function, minQubits: int, maxQubits: int, base_ob
 
         if index == "all":
             for j in range(num_params):
-                ax.plot(range(cost_history_dict["iters"]), cost_history_dict["deriv_history"][j], label=rf"$\partial_{{j}}\langle O\rangle$")
+                ax.plot(range(cost_history_dict["iters"]), cost_history_dict["deriv_history"][j], label=rf"$\partial_{{{j}}}\langle O\rangle$")
 
         else:
             for j in index:
-                ax.plot(range(cost_history_dict["iters"]), cost_history_dict["deriv_history"][j], label=rf"$\partial_{{j}}\langle O\rangle$")
+                ax.plot(range(cost_history_dict["iters"]), cost_history_dict["deriv_history"][j], label=rf"$\partial_{{{j}}}\langle O\rangle$")
 
         ax.set_xlabel("Iteraciones")
         ax.set_ylabel(r"$\langle O\rangle$")
@@ -285,7 +285,7 @@ def VQE_minimization_BP(ansatz_function, minQubits: int, maxQubits: int, base_ob
 # ====================================================================
 #            Función para varianza de gradientes
 # ====================================================================
-def variance_vs_nQubits(ansantz_function, minQubits: int, maxQubits: int, base_observable, index: int, num_shots=100, print_info: bool=True, plot_info: bool=True):
+def variance_vs_nQubits(ansantz_function, minQubits: int, maxQubits: int, base_observable, index: int, num_shots=100, print_info: bool=True, plot_info: bool=True, do_regress : bool=False):
     """
     Obtain the variances of the expectation value and the given derivative using different numbers of qubits.
 
@@ -345,39 +345,41 @@ def variance_vs_nQubits(ansantz_function, minQubits: int, maxQubits: int, base_o
         data["var_deriv"].append(var_deriv)
 
     # Regresiones
-    value_regress = linregress(data["n_qubits"], np.log(data["var_value"]))
-    deriv_regress = linregress(data["n_qubits"], np.log(data["var_deriv"]))
+    if do_regress:
+        value_regress = linregress(data["n_qubits"], np.log(data["var_value"]))
+        deriv_regress = linregress(data["n_qubits"], np.log(data["var_deriv"]))
 
-    data["value_slope"] = value_regress[0]
-    data["value_ord"] = value_regress[1]
-    data["value_rsquare"] = value_regress[2]
+        data["value_slope"] = value_regress[0]
+        data["value_ord"] = value_regress[1]
+        data["value_rsquare"] = value_regress[2]
 
-    data["deriv_slope"] = deriv_regress[0]
-    data["deriv_ord"] = deriv_regress[1]
-    data["deriv_rsquare"] = deriv_regress[2]
+        data["deriv_slope"] = deriv_regress[0]
+        data["deriv_ord"] = deriv_regress[1]
+        data["deriv_rsquare"] = deriv_regress[2]
 
+        if print_info:
+            print("\n=====================================================")
+            print(f"Pendiente para valor esperado: {data['value_slope']}.")
+            print(f"R^2 para valor esperado: {data['value_rsquare']}.")
 
-
-    if print_info:
-        print(print("\n====================================================="))
-        print(f"Pendiente para valor esperado: {data['value_slope']}.")
-        print(rf"$R^2$ para valor esperado: {data['value_rsquare']}.")
-
-        print(print("\n====================================================="))
-        print(f"Pendiente para derivada: {data['deriv_slope']}.")
-        print(rf"$R^2$ para valor esperado: {data['deriv_rsquare']}.")
+            print("\n=====================================================")
+            print(f"Pendiente para derivada: {data['deriv_slope']}.")
+            print(f"R^2 para valor esperado: {data['deriv_rsquare']}.")
     
     # Grafica concentracion del resultado y su derivada
     if plot_info:
         fig, ax = plt.subplots()
+        
         # Scatter
         ax.scatter(data["n_qubits"], data["var_value"], label=r"Var($\langle O\rangle$)")
         ax.scatter(data["n_qubits"], data["var_deriv"], label=rf"Var($\partial_{index}\langle O\rangle$)")
-        # Tendencias
-        base = np.linspace(2, maxQubits, 100)
 
-        ax.plot(base, np.exp(data["value_slope"]*base+data["value_ord"]), color="black", label=r"Tendencia: Var($\langle O\rangle$)")
-        ax.plot(base, np.exp(data["deriv_slope"]*base+data["deriv_ord"]), color="black", label=rf"Tendencia: Var($\partial_{index}\langle O\rangle$)")
+        # Tendencias
+        if do_regress:
+            base = np.linspace(2, maxQubits, 100)
+            ax.plot(base, np.exp(data["value_slope"]*base+data["value_ord"]), color="black", label=r"Tendencia: Var($\langle O\rangle$)")
+            ax.plot(base, np.exp(data["deriv_slope"]*base+data["deriv_ord"]), color="red", label=rf"Tendencia: Var($\partial_{index}\langle O\rangle$)")
+
         # Ajustes
         ax.set_xlabel(r"$N$ qubits")
         ax.set_title(rf"BP en VQE, variando el parámetro $\theta_{index}$")
