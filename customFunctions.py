@@ -351,11 +351,11 @@ def variance_vs_nQubits(ansantz_function, minQubits: int, maxQubits: int, base_o
 
         data["value_slope"] = value_regress[0]
         data["value_ord"] = value_regress[1]
-        data["value_rsquare"] = value_regress[2]
+        data["value_rsquare"] = value_regress[2]**2
 
         data["deriv_slope"] = deriv_regress[0]
         data["deriv_ord"] = deriv_regress[1]
-        data["deriv_rsquare"] = deriv_regress[2]
+        data["deriv_rsquare"] = deriv_regress[2]**2
 
         if print_info:
             print("\n=====================================================")
