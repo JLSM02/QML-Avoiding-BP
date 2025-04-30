@@ -313,15 +313,15 @@ def variance_vs_nQubits(ansantz_function, minQubits: int, maxQubits: int, base_o
             "deriv_rsquare" : (int)
     """
     data = {
-        "n_qubits" : [],
-        "var_value" : [],
-        "var_deriv" : [],
-        "value_slope" : 0,
-        "value_ord" : 0,
-        "value_rsquare" : 0,
-        "deriv_slope" : 0,
-        "deriv_ord" : 0,
-        "deriv_rsquare" : 0
+        "n_qubits": [],
+        "var_value": [],
+        "var_deriv": [],
+        "value_slope": 0,
+        "value_ord": 0,
+        "value_rsquare": 0,
+        "deriv_slope": 0,
+        "deriv_ord": 0,
+        "deriv_rsquare": 0
     }
 
     for i in range(minQubits, maxQubits+1):
@@ -345,27 +345,27 @@ def variance_vs_nQubits(ansantz_function, minQubits: int, maxQubits: int, base_o
         data["var_deriv"].append(var_deriv)
 
     # Regresiones
-    value_regress = linregress(data["var_value"], np.log(data["n_qubits"]))
-    deriv_regress = linregress(data["var_deriv"], np.log(data["n_qubits"]))
+    value_regress = linregress(data["n_qubits"], np.log(data["var_value"]))
+    deriv_regress = linregress(data["n_qubits"], np.log(data["var_deriv"]))
 
     data["value_slope"] = value_regress[0]
     data["value_ord"] = value_regress[1]
     data["value_rsquare"] = value_regress[2]
 
-    data["deriv_slope"] = value_regress[0]
-    data["deriv_ord"] = value_regress[1]
-    data["deriv_rsquare"] = value_regress[2]
+    data["deriv_slope"] = deriv_regress[0]
+    data["deriv_ord"] = deriv_regress[1]
+    data["deriv_rsquare"] = deriv_regress[2]
 
 
 
     if print_info:
         print(print("\n====================================================="))
-        print(f"Pendiente para valor esperado: {data["value_slope"]}.")
-        print(rf"$R^2$ para valor esperado: {data["value:rsquare"]}.")
+        print(f"Pendiente para valor esperado: {data['value_slope']}.")
+        print(rf"$R^2$ para valor esperado: {data['value_rsquare']}.")
 
         print(print("\n====================================================="))
-        print(f"Pendiente para derivada: {data["deriv_slope"]}.")
-        print(rf"$R^2$ para valor esperado: {data["deriv_rsquare"]}.")
+        print(f"Pendiente para derivada: {data['deriv_slope']}.")
+        print(rf"$R^2$ para valor esperado: {data['deriv_rsquare']}.")
     
     # Grafica concentracion del resultado y su derivada
     if plot_info:
