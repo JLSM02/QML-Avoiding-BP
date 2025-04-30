@@ -328,8 +328,8 @@ def variance_vs_nQubits(ansantz_function, minQubits: int, maxQubits: int, base_o
     # Grafica concentracion del resultado y su derivada
     if plot_info:
         fig, ax = plt.subplots()
-        ax.scatter(data[:,2], data[:,0], label=r"Var($\langle O\rangle$)")
-        ax.scatter(data[:,2], data[:,1], label=rf"Var($\partial_{index}\langle O\rangle$)")
+        ax.scatter(data["n_qubits"], data["var_value"], label=r"Var($\langle O\rangle$)")
+        ax.scatter(data["n_qubits"], data["var_deriv"], label=rf"Var($\partial_{index}\langle O\rangle$)")
         ax.set_xlabel(r"$N$ qubits")
         ax.set_ylabel(r"$\langle O\rangle$")
         ax.set_title(rf"BP en VQE, variando el parámetro $\theta_{index}$")
