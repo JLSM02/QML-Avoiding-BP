@@ -318,7 +318,7 @@ def variance_vs_nQubits(ansantz_function, minQubits: int, maxQubits: int, base_o
             print(f"Calculando varianzas con {i} qubits.\n")
         
         var_value, var_deriv = get_variances_data(num_params, ansatz_circuit, current_observable, index, num_shots)
-        
+
         # Información sobre la iteración actual
         if print_info:
             print(f"Varianza del valor esperado: {var_value}")
@@ -334,7 +334,6 @@ def variance_vs_nQubits(ansantz_function, minQubits: int, maxQubits: int, base_o
         ax.scatter(data["n_qubits"], data["var_value"], label=r"Var($\langle O\rangle$)")
         ax.scatter(data["n_qubits"], data["var_deriv"], label=rf"Var($\partial_{index}\langle O\rangle$)")
         ax.set_xlabel(r"$N$ qubits")
-        ax.set_ylabel(r"$\langle O\rangle$")
         ax.set_title(rf"BP en VQE, variando el parámetro $\theta_{index}$")
         ax.set_yscale("log")
         ax.legend()
