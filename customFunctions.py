@@ -359,13 +359,13 @@ def variance_vs_nQubits(ansantz_function, minQubits: int, maxQubits: int, base_o
 
 
     if print_info:
-        print(print("\n====================================================="))
+        print("\n=====================================================")
         print(f"Pendiente para valor esperado: {data['value_slope']}.")
-        print(rf"$R^2$ para valor esperado: {data['value_rsquare']}.")
+        print(f"R^2 para valor esperado: {data['value_rsquare']}.")
 
-        print(print("\n====================================================="))
+        print("\n=====================================================")
         print(f"Pendiente para derivada: {data['deriv_slope']}.")
-        print(rf"$R^2$ para valor esperado: {data['deriv_rsquare']}.")
+        print(f"R^2 para valor esperado: {data['deriv_rsquare']}.")
     
     # Grafica concentracion del resultado y su derivada
     if plot_info:
@@ -377,7 +377,7 @@ def variance_vs_nQubits(ansantz_function, minQubits: int, maxQubits: int, base_o
         base = np.linspace(2, maxQubits, 100)
 
         ax.plot(base, np.exp(data["value_slope"]*base+data["value_ord"]), color="black", label=r"Tendencia: Var($\langle O\rangle$)")
-        ax.plot(base, np.exp(data["deriv_slope"]*base+data["deriv_ord"]), color="black", label=rf"Tendencia: Var($\partial_{index}\langle O\rangle$)")
+        ax.plot(base, np.exp(data["deriv_slope"]*base+data["deriv_ord"]), color="red", label=rf"Tendencia: Var($\partial_{index}\langle O\rangle$)")
         # Ajustes
         ax.set_xlabel(r"$N$ qubits")
         ax.set_title(rf"BP en VQE, variando el parámetro $\theta_{index}$")
