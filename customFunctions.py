@@ -265,11 +265,11 @@ def VQE_minimization_BP(ansatz_function, minQubits: int, maxQubits: int, base_ob
 
         if index == "all":
             for j in range(num_params):
-                ax.plot(range(cost_history_dict["iters"]), cost_history_dict["deriv_history"][j], label=rf"$\partial_{{j}}\langle O\rangle$")
+                ax.plot(range(cost_history_dict["iters"]), cost_history_dict["deriv_history"][j], label=rf"$\partial_{{{j}}}\langle O\rangle$")
 
         else:
             for j in index:
-                ax.plot(range(cost_history_dict["iters"]), cost_history_dict["deriv_history"][j], label=rf"$\partial_{{j}}\langle O\rangle$")
+                ax.plot(range(cost_history_dict["iters"]), cost_history_dict["deriv_history"][j], label=rf"$\partial_{{{j}}}\langle O\rangle$")
 
         ax.set_xlabel("Iteraciones")
         ax.set_ylabel(r"$\langle O\rangle$")
