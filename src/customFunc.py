@@ -1,15 +1,16 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from qiskit.circuit import QuantumCircuit, Parameter
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.primitives import Estimator
 from scipy.optimize import minimize
 from scipy.stats import linregress
 
 
+
+
 # ====================================================================
-#                 Función para expandir el observable
+#                 Function to expand observables
 # ====================================================================
 def expand_observable(op: SparsePauliOp, total_qubits: int):
     """
@@ -34,55 +35,9 @@ def expand_observable(op: SparsePauliOp, total_qubits: int):
 
 
 
-# ====================================================================
-#                 Función construir un deep ansatz
-# ====================================================================
-def build_deep_ansatz(layers_per_qubit: int, num_qubits: int):
-    """
-    Builds a deep ansatz.
-
-    Args:
-        layers_per_qubit (int): Number of layers to add to the circuit per qubit.
-        num_qubits (int): Number of qubits to be used in the circuit.
-
-    Returns:
-        qc (QuantumCircuit): Resulting Qiskit circuit implementing the ansantz.
-        num_params (int): Number of parameters used in the ansatz
-    """
-    L = layers_per_qubit * num_qubits  # número de capas
-    qc = QuantumCircuit(num_qubits)
-    qc.ry(np.pi/4, range(num_qubits))
-    qc.barrier()
-    thetas = []
-
-    def layer(qc, theta_list):
-        # RX en cada qubit
-        for i in range(num_qubits):
-            aux = np.random.random()
-            if aux < 1/3:
-                qc.rx(theta_list[i], i)
-            elif aux < 2/3:
-                qc.ry(theta_list[i], i)
-            else:
-                qc.rz(theta_list[i], i)
-        # CZ entre qubits adyacentes
-        for i in range(num_qubits - 1):
-            qc.cz(i, i + 1)
-
-    for layer_index in range(L):
-        theta_layer = [Parameter(f'θ_{layer_index}_{i}') for i in range(num_qubits)]
-        thetas.append(theta_layer)
-        layer(qc, theta_layer)
-        qc.barrier()
-
-    # Devuelve el circuito y el numero de parametros
-    num_params =  len(thetas)*num_qubits
-    return qc, num_params
-
-
 
 # ====================================================================
-#             Función para calcular el valor esperado
+#             Function that calculates a expectation value
 # ====================================================================
 def evaluate_observable(params, ansatz, observable, estimator):
     """
@@ -105,8 +60,9 @@ def evaluate_observable(params, ansatz, observable, estimator):
 
 
 
+
 # ====================================================================
-#            Función para la derivada del valor esperado
+#         Function to get the derivative of an expectation value
 # ====================================================================
 def evaluate_deriv(params, ansatz, observable, index, estimator):
     """
@@ -142,7 +98,7 @@ def evaluate_deriv(params, ansatz, observable, index, estimator):
 
 
 # ====================================================================
-#            Función para la obtener las varianzas
+#            Function that calvulates the variances
 # ====================================================================
 def get_variances_data(num_params, ansatz, observable, index, num_shots=100):
     """
@@ -183,7 +139,7 @@ def get_variances_data(num_params, ansatz, observable, index, num_shots=100):
 
 
 # ====================================================================
-#            Función para minimización VQE
+#            VQE implementation for BP study
 # ====================================================================
 def VQE_minimization_BP(ansatz_function, minQubits: int, maxQubits: int, base_observable, index: list[int], initial_guess: str = "zero", minimizer: str = "COBYLA", print_info: bool = True, plot_info: bool = True):
     """
@@ -302,7 +258,7 @@ def VQE_minimization_BP(ansatz_function, minQubits: int, maxQubits: int, base_ob
 
 
 # ====================================================================
-#            Función para varianza de gradientes
+#            Look for BP by studying variances concentration
 # ====================================================================
 def variance_vs_nQubits(ansantz_function, minQubits: int, maxQubits: int, base_observable, index: int, num_shots=100, print_info: bool=True, plot_info: bool=True, do_regress : bool=False):
     """
