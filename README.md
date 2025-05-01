@@ -1,5 +1,3 @@
-### Authors: Daniel Pérez García, Martín Ruiz Fernández & Juan Luis Salas Montoro.
-
 # QML-Avoiding-BP
 
 > Investigating barren plateaus in quantum machine learning models through gradient analysis and optimization strategies.
@@ -33,9 +31,12 @@ conda activate qml-env
 pip install -r requirements.txt
 ```
 
+---
+
 ## 🚀 How to Use
 Run the notebooks in the notebooks/ folder to reproduce key experiments:
 
+---
 
 ## 📚 Dependencies
 * Python ≥ 3.10
@@ -45,6 +46,22 @@ Run the notebooks in the notebooks/ folder to reproduce key experiments:
 * SciPy
 
 All listed in requirements.txt.
+
+---
+
+## Authors
+
+This project was developed as part of the Master's Thesis in Quantum Computing at Universidad Internacional de La Rioja (UNIR), 2025.
+
+- **Juan Luis Salas Montoro** – [@JLSM02](https://github.com/JLSM02)
+- **Martín Ruiz Fernández2** – [@mruifer](https://github.com/mruifer)
+- **Daniel Perez García** – [@danieelpg02](https://github.com/danieelpg02)
+
+### Supervisor
+
+- **Dr. David Pérez de Lara** – Supervisor at UNIR
+
+---
 
 ## 📃 License
 
