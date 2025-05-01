@@ -8,8 +8,10 @@ from scipy.optimize import minimize
 from scipy.stats import linregress
 
 
+
+
 # ====================================================================
-#                 Función para expandir el observable
+#                 Function to expand observables
 # ====================================================================
 def expand_observable(op: SparsePauliOp, total_qubits: int):
     """
@@ -34,10 +36,11 @@ def expand_observable(op: SparsePauliOp, total_qubits: int):
 
 
 
+
 # ====================================================================
-#                 Función construir un deep ansatz
+#                 Function to build a deep ansatz
 # ====================================================================
-def build_deep_ansatz(layers_per_qubit: int, num_qubits: int):
+def build_deep_ansatz(num_qubits: int, layers_per_qubit: int = 10):
     """
     Builds a deep ansatz.
 
@@ -81,8 +84,9 @@ def build_deep_ansatz(layers_per_qubit: int, num_qubits: int):
 
 
 
+
 # ====================================================================
-#             Función para calcular el valor esperado
+#             Function that calculates a expectation value
 # ====================================================================
 def evaluate_observable(params, ansatz, observable, estimator):
     """
@@ -105,8 +109,9 @@ def evaluate_observable(params, ansatz, observable, estimator):
 
 
 
+
 # ====================================================================
-#            Función para la derivada del valor esperado
+#         Function to get the derivative of an expectation value
 # ====================================================================
 def evaluate_deriv(params, ansatz, observable, index, estimator):
     """
@@ -142,7 +147,7 @@ def evaluate_deriv(params, ansatz, observable, index, estimator):
 
 
 # ====================================================================
-#            Función para la obtener las varianzas
+#            Function that calvulates the variances
 # ====================================================================
 def get_variances_data(num_params, ansatz, observable, index, num_shots=100):
     """
@@ -183,7 +188,7 @@ def get_variances_data(num_params, ansatz, observable, index, num_shots=100):
 
 
 # ====================================================================
-#            Función para minimización VQE
+#            VQE implementation for BP study
 # ====================================================================
 def VQE_minimization_BP(ansatz_function, minQubits: int, maxQubits: int, base_observable, index: list[int], initial_guess: str = "zero", minimizer: str = "COBYLA", print_info: bool = True, plot_info: bool = True):
     """
@@ -302,7 +307,7 @@ def VQE_minimization_BP(ansatz_function, minQubits: int, maxQubits: int, base_ob
 
 
 # ====================================================================
-#            Función para varianza de gradientes
+#            Look for BP by studying variances concentration
 # ====================================================================
 def variance_vs_nQubits(ansantz_function, minQubits: int, maxQubits: int, base_observable, index: int, num_shots=100, print_info: bool=True, plot_info: bool=True, do_regress : bool=False):
     """
