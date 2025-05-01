@@ -10,22 +10,22 @@ import numpy as np
 def build_deep_ansatz(num_qubits: int, layers_per_qubit: int = 10) -> tuple[QuantumCircuit, int]:
     """
     Builds a deep ansatz.
-
+    -----------------------------------------
     Args:
         layers_per_qubit (int): Number of layers to add to the circuit per qubit.
         num_qubits (int): Number of qubits to be used in the circuit.
-
+    -----------------------------------------
     Returns:
         tuple: (QuantumCircuit, number of parameters in the circuit)
     """
-    L = layers_per_qubit * num_qubits  # número de capas
+    L = layers_per_qubit * num_qubits  # Number of layers
     qc = QuantumCircuit(num_qubits)
     qc.ry(np.pi/4, range(num_qubits))
     qc.barrier()
     thetas = []
 
     def layer(qc, theta_list):
-        # RX en cada qubit
+        # RX for each qubit
         for i in range(num_qubits):
             aux = np.random.random()
             if aux < 1/3:
@@ -34,7 +34,7 @@ def build_deep_ansatz(num_qubits: int, layers_per_qubit: int = 10) -> tuple[Quan
                 qc.ry(theta_list[i], i)
             else:
                 qc.rz(theta_list[i], i)
-        # CZ entre qubits adyacentes
+        # CZ between near qubits
         for i in range(num_qubits - 1):
             qc.cz(i, i + 1)
 
@@ -44,7 +44,7 @@ def build_deep_ansatz(num_qubits: int, layers_per_qubit: int = 10) -> tuple[Quan
         layer(qc, theta_layer)
         qc.barrier()
 
-    # Devuelve el circuito y el numero de parametros
+    # Returns circuit and number of parameters
     num_params =  len(thetas)*num_qubits
     return qc, num_params
 
@@ -58,11 +58,11 @@ def build_Nlocal_ansatz(num_qubits, layers = 2) -> tuple[QuantumCircuit, int]:
     """
     Creates an N-local ansatz with a given number of qubits and repetitions.
     Returns the circuit and the number of free parameters.
-
+    -----------------------------------------
     Args:
         num_qubits (int): Number of qubits in the circuit.
         layers (int): Number of repetitions (layers) of the ansatz.
-
+    -----------------------------------------
     Returns:
         tuple: (QuantumCircuit, number of parameters in the circuit)
     """
@@ -92,11 +92,11 @@ def build_twoLocal_ansatz(num_qubits: int, layers: int = 1) -> tuple[QuantumCirc
     """
     Creates an Two-Local ansatz with a given number of qubits and repetitions.
     Returns the circuit and the number of free parameters.
-
+    -----------------------------------------
     Args:
         num_qubits (int): Number of qubits in the circuit.
         layers (int): Number of repetitions (layers) of the ansatz.
-
+    -----------------------------------------
     Returns:
         tuple: (QuantumCircuit, number of parameters in the circuit)
     """
