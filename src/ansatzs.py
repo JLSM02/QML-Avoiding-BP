@@ -1,5 +1,5 @@
 from qiskit.circuit import QuantumCircuit, Parameter
-from qiskit.circuit.library import NLocal, CCXGate, CRZGate, RXGate
+from qiskit.circuit.library import NLocal, TwoLocal, CCXGate, CRZGate, RXGate
 import numpy as np
 
 
@@ -7,7 +7,7 @@ import numpy as np
 # ====================================================================
 #                 Function to build a deep ansatz
 # ====================================================================
-def build_deep_ansatz(num_qubits: int, layers_per_qubit: int = 10):
+def build_deep_ansatz(num_qubits: int, layers_per_qubit: int = 10) -> tuple[QuantumCircuit, int]:
     """
     Builds a deep ansatz.
 
@@ -16,8 +16,7 @@ def build_deep_ansatz(num_qubits: int, layers_per_qubit: int = 10):
         num_qubits (int): Number of qubits to be used in the circuit.
 
     Returns:
-        qc (QuantumCircuit): Resulting Qiskit circuit implementing the ansantz.
-        num_params (int): Number of parameters used in the ansatz
+        tuple: (QuantumCircuit, number of parameters in the circuit)
     """
     L = layers_per_qubit * num_qubits  # número de capas
     qc = QuantumCircuit(num_qubits)
@@ -55,7 +54,18 @@ def build_deep_ansatz(num_qubits: int, layers_per_qubit: int = 10):
 # ====================================================================
 #                 Function to N local ansatz
 # ====================================================================
-def build_Nlocal_ansatz(num_qubits, num_layers = 2):
+def build_Nlocal_ansatz(num_qubits, layers = 2) -> tuple[QuantumCircuit, int]:
+    """
+    Creates an N-local ansatz with a given number of qubits and repetitions.
+    Returns the circuit and the number of free parameters.
+
+    Args:
+        num_qubits (int): Number of qubits in the circuit.
+        layers (int): Number of repetitions (layers) of the ansatz.
+
+    Returns:
+        tuple: (QuantumCircuit, number of parameters in the circuit)
+    """
     theta = Parameter("θ")
 
     entanglement_list = []
@@ -67,11 +77,36 @@ def build_Nlocal_ansatz(num_qubits, num_layers = 2):
         rotation_blocks=[RXGate(theta), CRZGate(theta)],  # Keep rotation blocks
         entanglement_blocks=CCXGate(),
         entanglement=entanglement_list,  # Define entanglement pattern
-        reps=num_layers,
+        reps=layers,
         insert_barriers=True,
     )
     
     return ansatz, ansatz.num_parameters
 
+
+
+
+
+
+def build_twoLocal_ansatz(num_qubits: int, layers: int = 1) -> tuple[QuantumCircuit, int]:
+    """
+    Creates an Two-Local ansatz with a given number of qubits and repetitions.
+    Returns the circuit and the number of free parameters.
+
+    Args:
+        num_qubits (int): Number of qubits in the circuit.
+        layers (int): Number of repetitions (layers) of the ansatz.
+
+    Returns:
+        tuple: (QuantumCircuit, number of parameters in the circuit)
+    """
+    ansatz = TwoLocal(num_qubits,
+                      rotation_blocks='ry',
+                      entanglement_blocks='cz',
+                      entanglement='linear',
+                      reps=layers,
+                      insert_barriers=True)
+    
+    return ansatz, ansatz.num_parameters
 
 
