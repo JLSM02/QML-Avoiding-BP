@@ -11,7 +11,26 @@ This project explores the **barren plateau phenomenon** in the training of **var
 ---
 
 ## 📁 Project Structure
-
+```
+project/
+│
+├── README.md                    # Project documentation
+├── requirements.txt             # Dependencies required to run the project
+├── LICENSE                      # License information for the project
+│
+├── src/                         # Main project module
+│   ├── __init__.py              # Marks this directory as a Python package
+│   ├── customFuncs.py           # Utility functions
+│   └── ansatzs.py               # Ansatz building functions
+│
+├── notebooks/                   # Main experiments
+│   ├── VQE/                     # BP in study of molecules via VQE
+│   └── Z1Z2/                    # BP in Z1Z2 observable
+│
+└── tests/                       # Test scripts and notebooks
+    └── test-customFunc.py
+    └── test-ansatzs.py
+```
 ---
 
 ## 🛠️ Installation
@@ -34,7 +53,7 @@ pip install -r requirements.txt
 ---
 
 ## 🚀 How to Use
-Run the notebooks in the notebooks/ folder to reproduce key experiments:
+Run the notebooks in the notebooks/ folder to reproduce key experiments!
 
 ---
 
