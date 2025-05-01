@@ -27,7 +27,7 @@ def expand_observable(op: SparsePauliOp, total_qubits: int):
     expanded_paulis = []
     for pauli, coeff in zip(op.paulis, op.coeffs):
         pauli_str = pauli.to_label()
-        # Añadir identidades antes y después según la posición deseada
+        # Add identities before and after deppending on the desired position
         new_pauli = (
             pauli_str + "I" * (total_qubits - len(pauli_str))
         )
