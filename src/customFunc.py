@@ -94,7 +94,32 @@ def evaluate_deriv(params, ansatz, observable, index, estimator):
     deriv = 0.5 * (value_plus - value_minus)
     
     return deriv
-   
+
+
+
+
+# ====================================================================
+#         Function to get the gradient of an expectation value
+# ====================================================================
+def evaluate_grad(params, ansatz, observable, estimator):
+    """
+    Computes the gradient of an observable.
+    -----------------------------------------
+    Args:
+        params (Numpy 1D array): The list of parameters to be used in the calculation.
+        ansatz (QuantumCircuit): The Qiskit circuit containing the ansatz, the parametrized quantum circuit.
+        observable (SparsePauliOp): The observable to be measured.
+        estimator (Estimator): Qiskit estimator to use in the calculations.
+    -----------------------------------------
+    Returns:
+        list(float): Gradient of the expectation valur of the observable.
+    """
+    grad = []
+
+    for i in range(len(params)):
+        grad.append(evaluate_deriv(params, ansatz, observable, i, estimator))
+    
+    return grad
 
 
 
