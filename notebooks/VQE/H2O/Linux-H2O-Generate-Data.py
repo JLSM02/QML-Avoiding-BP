@@ -6,64 +6,35 @@ from qiskit_nature.second_q.mappers import JordanWignerMapper
 from qiskit_nature.second_q.circuit.library import HartreeFock, UCCSD
 
 
-# Geometría de la molecula
-geometry = "O 0.0 0.0 0.0; H 0.757 0.586 0.0; H -0.757 0.586 0.0"
+def hamiltonians(geometry, dist):
+    # Configuramos el driver PySCF
+    driver = PySCFDriver(atom=geometry, basis='sto3g')
 
-# Configuramos el driver PySCF
-driver = PySCFDriver(atom=geometry, basis='sto3g')
+    # Ejecutamos el driver para obtener el problema de la estructura electrónica
+    es_problem = driver.run()
 
-# Ejecutamos el driver para obtener el problema de la estructura electrónica
-es_problem = driver.run()
+    # Construimos el Hamiltoniano después de la segunda cuantización
+    hamiltonian = es_problem.second_q_ops()[0]
 
+    # Aplicamos las transformaciones de Jordan-Wigner
+    mapper = JordanWignerMapper()
+    hamiltonian = mapper.map(hamiltonian)
 
-# ============================= Hamiltoniano =================================
+    with open(f"notebooks/VQE/H2O/data/hamiltonian{dist:.3f}.pkl", "wb") as f:
+        pickle.dump(hamiltonian, f)
 
-# Construimos el Hamiltoniano después de la segunda cuantización
-hamiltonian = es_problem.second_q_ops()[0]
+    # Repulsión nuclear
+    nuclear_repulsion = es_problem.nuclear_repulsion_energy
 
-# Aplicamos las transformaciones de Jordan-Wigner
-mapper = JordanWignerMapper()
-hamiltonian = mapper.map(hamiltonian)
+    with open(f"notebooks/VQE/H2O/data/nuclear_repulsion{dist:.3f}.pkl", "wb") as f:
+        pickle.dump(nuclear_repulsion, f)
 
-# Mostramos el Hamiltoniano
-print(f"Hamiltoniano para geometría: {geometry} \n{hamiltonian}")
+sen = np.sin(104.5/2 *360/2/np.pi)
+cos = np.cos(104.5/2 *360/2/np.pi)
 
-# Guardamos en archivo
-with open(f"VQE/H2O/data/hamiltonian.pkl", "wb") as f:
-    pickle.dump(hamiltonian, f)
-
-
-# ============================= Repulsión nuclear =================================
-
-nuclear_repulsion = es_problem.nuclear_repulsion_energy
-
-# Guardamos en archivo
-print(f"Energía nuclear: {nuclear_repulsion}")
-with open(f"VQE/H2O/data/nuclear_repulsion.pkl", "wb") as f:
-    pickle.dump(nuclear_repulsion, f)
-
-
-# ============================= Ansatz =================================
-
-#Definir parámetros
-num_spatial_orbitals = es_problem.num_spin_orbitals // 2  # 14 // 2 = 7
-num_particles = es_problem.num_particles  # (5, 5)
-
-#Crear el estado de Hartree-Fock
-hf_initial_state = HartreeFock(
-    num_spatial_orbitals=num_spatial_orbitals,
-    num_particles=num_particles,
-    qubit_mapper=mapper
-)
-
-#Crear el ansatz UCCSD
-ansatz = UCCSD(
-    num_spatial_orbitals=num_spatial_orbitals,
-    num_particles=num_particles,
-    qubit_mapper=mapper,
-    initial_state=hf_initial_state
-)
-
-# Guardamos en archivo
-with open("VQE/H2O/data/ansatz.pkl", "wb") as f:
-    pickle.dump(ansatz, f)
+distances = np.linspace(0.25, 4, 25)
+for dist in distances:
+    # Geometría de la molecula
+    
+    geometry = f"O 0.0 0.0 0.0; H {sen*dist} {cos*dist} 0.0; H -0.757 0.586 0.0"
+    hamiltonians(geometry,dist)

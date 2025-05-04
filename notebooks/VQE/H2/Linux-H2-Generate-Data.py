@@ -19,13 +19,13 @@ def hamiltonians(geometry,dist):
     mapper = JordanWignerMapper()
     hamiltonian = mapper.map(hamiltonian)
 
-    with open(f"VQE/H2/data/hamiltonian{dist:.3f}.pkl", "wb") as f:
+    with open(f"notebooks/VQE/H2/data/hamiltonian{dist:.3f}.pkl", "wb") as f:
         pickle.dump(hamiltonian, f)
 
     # Repulsión nuclear
     nuclear_repulsion = es_problem.nuclear_repulsion_energy
 
-    with open(f"VQE/H2/data/nuclear_repulsion{dist:.3f}.pkl", "wb") as f:
+    with open(f"notebooks/VQE/H2/data/nuclear_repulsion{dist:.3f}.pkl", "wb") as f:
         pickle.dump(nuclear_repulsion, f)
 
 distances = np.linspace(0.25, 4, 25)
