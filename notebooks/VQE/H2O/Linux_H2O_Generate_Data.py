@@ -32,7 +32,7 @@ def hamiltonians(geometry, dist):
 sen = np.sin(104.5/2 *360/2/np.pi)
 cos = np.cos(104.5/2 *360/2/np.pi)
 
-distances = np.linspace(0.25, 4, 25)
+distances = np.linspace(0.25, 4, 16)
 for dist in distances:
     # Geometría de la molecula
     
