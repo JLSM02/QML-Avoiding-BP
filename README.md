@@ -63,8 +63,9 @@ Run the notebooks in the notebooks/ folder to reproduce key experiments!
 * NumPy
 * Matplotlib
 * SciPy
+* ...
 
-All listed in requirements.txt.
+All listed (and their specific version) in requirements.txt.
 
 ---
 
