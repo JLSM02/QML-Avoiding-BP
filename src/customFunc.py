@@ -376,7 +376,7 @@ def variance_vs_nQubits(ansantz_function, minQubits: int, maxQubits: int, base_o
 
         # Tendencies
         if do_regress:
-            base = np.linspace(2, maxQubits, 100)
+            base = np.linspace(minQubits, maxQubits, 100)
             ax.plot(base, np.exp(data["value_slope"]*base+data["value_ord"]), color="black", label=r"Tendencia: Var($\langle O\rangle$)")
             ax.plot(base, np.exp(data["deriv_slope"]*base+data["deriv_ord"]), color="red", label=rf"Tendencia: Var($\partial_{index}\langle O\rangle$)")
 
