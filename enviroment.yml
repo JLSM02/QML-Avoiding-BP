@@ -1,0 +1,15 @@
+name: qml_avoiding_bp
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python==3.11.11
+  - qiskit==0.45.1
+  - matplotlib==3.10.0
+  - pylatexenc==2.10
+  - qiskit-aer==0.13.3
+  - qiskit-algorithms==0.3.1
+  - ipykernel
+  - pip
+  - pip:
+      - qiskit-nature==0.7.1
