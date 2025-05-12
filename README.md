@@ -1,6 +1,6 @@
 # QML-Avoiding-BP
 
-> Investigating barren plateaus in quantum machine learning models through gradient analysis and optimization strategies.
+Investigating barren plateaus in quantum machine learning models through gradient analysis and optimization strategies.
 
 ---
 
@@ -40,10 +40,19 @@ project/
 git clone https://github.com/JLSM02/QML-Avoiding-BP.git
 cd QML-Avoiding-BP
 ```
+### 🟢 Option 1: Using Conda (Recommended)
+2. Create and activate a environment:
+```bash
+conda env create -f environment.yml
+conda activate qml_avoiding_bp
+```
+### 🔵 Option 2: Using pip and a virtualenv
+`Make sure you have Python 3.10 installed.`
+
 2. Create and activate a virtual environment:
 ```bash
-conda create -n qml-env python=3.10
-conda activate qml-env
+python -m venv qml-env
+source qml-env/bin/activate   # On Windows use: qml-env\Scripts\activate
 ```
 3. Install the dependencies:
 ```bash
@@ -58,14 +67,14 @@ Run the notebooks in the notebooks/ folder to reproduce key experiments!
 ---
 
 ## 📚 Dependencies
-* Python ≥ 3.10
+* Python 3.10
 * Qiskit
 * NumPy
 * Matplotlib
 * SciPy
 * . . .
 
-All listed (and their specific version) in requirements.txt.
+All listed (and their specific version) in enviroment.yml / requirements.txt.
 
 ---
 
