@@ -15,7 +15,8 @@ This project explores the **barren plateau phenomenon** in the training of **var
 project/
 │
 ├── README.md                    # Project documentation
-├── requirements.txt             # Dependencies required to run the project
+├── requirements.txt             # Dependencies required to run the project (pip)
+├── enviroment.yml               # Dependencies required to run the project (conda)
 ├── LICENSE                      # License information for the project
 │
 ├── src/                         # Main project module
