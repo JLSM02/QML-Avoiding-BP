@@ -155,28 +155,17 @@ from qiskit.circuit.library import CXGate
 from qiskit.transpiler.basepasses import TransformationPass
 from qiskit.converters import circuit_to_dag, dag_to_circuit
 
+def is_two_qubits(pauli_string):
+    """Function that returns an operator if it acts on 2 qubits"""
+    return pauli_string.count('I') == len(pauli_string) - 2
+
 class QAOAPass(TransformationPass):
 
-    def __init__(self, num_layers, num_qubits, cost_other, init_state = None, mixer_layer = None):
+    def __init__(self, num_layers, num_qubits, cost_other):
 
         super().__init__()
         self.num_layers = num_layers
         self.num_qubits = num_qubits
-        
-        if init_state is None:
-            # Add default initial state -> equal superposition
-            self.init_state = QuantumCircuit(num_qubits)
-            self.init_state.h(range(num_qubits))
-        else: 
-            self.init_state = init_state
-        
-        if mixer_layer is None:
-            # Define default mixer layer
-            self.mixer_layer = QuantumCircuit(num_qubits)
-            self.mixer_layer.rx(-2*ParameterVector("β", self.num_layers)[0], range(num_qubits))
-        else:
-            self.mixer_layer = mixer_layer
-
         self.cost_other = cost_other
 
     def run(self, cost_layer_dag):
@@ -191,35 +180,39 @@ class QAOAPass(TransformationPass):
         qaoa_circuit.compose(self.init_state, inplace = True)
 
         # Iterate over number of qaoa layers and alternate cost/reversed cost and mixer
-        for layer in range(self.num_layers): 
-        
-            bind_dict = {cost_layer.parameters[0]: gammas[layer]}
-            bound_cost_layer = cost_layer.assign_parameters(bind_dict)
-            
-            bind_dict = {self.mixer_layer.parameters[0]: betas[layer]}
-            bound_mixer_layer = self.mixer_layer.assign_parameters(bind_dict)
+        bind_dict = {cost_layer.parameters[0]: gammas}
+        bound_cost_layer = cost_layer.assign_parameters(bind_dict)
 
-            if layer % 2 == 0:
-                # Even layer -> append cost
-                for pauli_str, coeff in self.cost_other.to_list():
-                    # Identify qubits with Z operators
-                    target_qubits = [i for i, char in enumerate(pauli_str[::-1]) if char == 'Z']   
-                    if target_qubits:
-                        # Apply Rz gates with their coefficient
-                        for n in target_qubits:
-                            qaoa_circuit.rz(2*coeff.real*gammas[layer], n)  # 2 factor for Qiskit sctructure
-                qaoa_circuit.compose(bound_cost_layer, range(self.num_qubits), inplace=True)
-            else:
-                # Odd layer -> append reversed cost
-                qaoa_circuit.compose(bound_cost_layer.reverse_ops(), range(self.num_qubits), inplace=True)
-                for pauli_str, coeff in self.cost_other.to_list():
-                    # Identify qubits with Z operators
-                    target_qubits = [i for i, char in enumerate(pauli_str[::-1]) if char == 'Z']   
-                    if target_qubits:
-                        # Apply Rz gates with their coefficient
-                        for n in target_qubits:
-                            qaoa_circuit.rz(2*coeff.real*gammas[layer], n)  # 2 factor for Qiskit sctructure
-        
-            # The mixer layer is not reversed
-            qaoa_circuit.compose(bound_mixer_layer, range(self.num_qubits), inplace=True)    
+        for pauli_str, coeff in self.cost_other.to_list():
+            # Identify qubits with Z operators
+            target_qubits = [i for i, char in enumerate(pauli_str[::-1]) if char == 'Z']   
+            if target_qubits:
+                # Apply Rz gates with their coefficient
+                for n in target_qubits:
+                    qaoa_circuit.rz(2*coeff.real*gammas, n)  # 2 factor for Qiskit sctructure
+        qaoa_circuit.compose(bound_cost_layer, range(self.num_qubits), inplace=True)
+  
         return circuit_to_dag(qaoa_circuit)
+
+def optimize_qaoa(cost_operator, layers):
+    # Separate 2 qubit gates from other gates
+    pauli_list = cost_operator.to_list()
+    two_qubits = [(p, c) for p, c in pauli_list if is_two_qubits(p)]
+    others    = [(p, c) for p, c in pauli_list if not is_two_qubits(p)]
+    cost_2qubits = SparsePauliOp.from_list(two_qubits)
+    cost_other = SparsePauliOp.from_list(others)
+
+    # Choose swap strategy (in this case -> line)
+    num_qubits=cost_operator.num_qubits
+    swap_strategy = SwapStrategy.from_line([i for i in range(num_qubits)])
+    edge_coloring = {(idx, idx + 1): (idx + 1) % 2 for idx in range(num_qubits)}
+
+    # Define pass manager
+    init_cost_layer = PassManager([HighLevelSynthesis(basis_gates=['PauliEvolution']), FindCommutingPauliEvolutions(), Commuting2qGateRouter(swap_strategy, edge_coloring,), HighLevelSynthesis(basis_gates=["x", "cx", "sx", "rz", "id"]), InverseCancellation(gates_to_cancel=[CXGate()])])
+    init_ansatz = PassManager([QAOAPass(layers, num_qubits, cost_other)])
+
+    # Create a circuit for the 2 qubit gates and optimize it with the cost layer pass manager
+    qaoa_2qubits = QAOAAnsatz(cost_operator=cost_2qubits, reps=1, initial_state=QuantumCircuit(num_qubits), mixer_operator=QuantumCircuit(num_qubits))
+    qaoa_2qubits_opt=init_cost_layer.run(qaoa_2qubits)
+
+    return init_ansatz.run(qaoa_2qubits_opt)    # Return the optimized full ansatz
