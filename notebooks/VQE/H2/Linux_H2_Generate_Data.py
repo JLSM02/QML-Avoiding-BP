@@ -28,9 +28,34 @@ def hamiltonians(geometry,dist):
     with open(f"notebooks/VQE/H2/data/nuclear_repulsion{dist:.3f}.pkl", "wb") as f:
         pickle.dump(nuclear_repulsion, f)
 
+from qiskit_nature.second_q.circuit.library import HartreeFock, UCCSD
+
+dist = 0.725
+geometry = f"H 0.0 0.0 {-dist/2}; H 0.0 0.0 {dist/2}"
+hamiltonians(geometry,dist)
+
+# Definir parámetros
+num_spatial_orbitals = es_problem.num_spin_orbitals // 2  
+num_particles = es_problem.num_particles  
+
+# Crear el estado de Hartree-Fock
+hf_initial_state = HartreeFock(
+    num_spatial_orbitals=num_spatial_orbitals,
+    num_particles=num_particles,
+    qubit_mapper=mapper
+)
+
+# Crear el ansatz UCCSD
+ansatz_H2 = UCCSD(
+    num_spatial_orbitals=num_spatial_orbitals,
+    num_particles=num_particles,
+    qubit_mapper=mapper,
+    initial_state=hf_initial_state
+) 
+
 # For different distances
 distances = np.linspace(0.25, 4, 25)
 for dist in distances:
     # Molecule geometry
     geometry = f"H 0.0 0.0 {-dist/2}; H 0.0 0.0 {dist/2}"
-    hamiltonians(geometry,dist)
+    hamiltonians(geometry,dist)  
