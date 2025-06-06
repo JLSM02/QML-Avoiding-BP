@@ -177,5 +177,3 @@ def optimize_qaoa(cost_operator):
     qaoa_2qubits_opt=init_cost_layer.run(qaoa_2qubits)
 
     return qaoa_2qubits_opt
-
-SparsePauliOp('YYYY', coeff=0.33)
