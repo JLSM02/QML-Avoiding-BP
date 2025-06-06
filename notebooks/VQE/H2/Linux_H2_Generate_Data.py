@@ -30,7 +30,7 @@ def hamiltonians(geometry,dist):
 
 from qiskit_nature.second_q.circuit.library import HartreeFock, UCCSD
 
-dist = 0.725
+dist = 0.719
 geometry = f"H 0.0 0.0 {-dist/2}; H 0.0 0.0 {dist/2}"
 hamiltonians(geometry,dist)
 
