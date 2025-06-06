@@ -395,6 +395,146 @@ def variance_vs_nQubits(ansantz_function, minQubits: int, maxQubits: int, base_o
 
 
 
+# ====================================================================
+#            Look for BP by studying variances concentration
+# ====================================================================
+def noisy_variance_vs_nQubits(ansantz_function, fake_backend, noise_scale, minQubits: int, maxQubits: int, base_observable, index: int, num_shots=100, print_info: bool=True, plot_info: bool=True, do_regress : bool=False):
+    """
+    Obtain the variances of the expectation value and the given derivative using different numbers of qubits.
+    -----------------------------------------
+    Args:
+        ansatz_function (method): A function defined as follows: ansatz_function(N_qubits (int)) -> qc (QuantumCircuit), num_params (int)
+        minQubits (int): The smallest number of qubits used.
+        maxQubits (int): The greatest number of qubits used.
+        base_observable (SparsePauliOp): The observable to be measured in its minimal form, it should use minQubits number of qubits.
+        index (int): With respect to which parameter the derivative will be taken.
+        num_shots (int): Number of samples taken to compute the variances.
+        print_info (bool): If the results will be printed
+        plot_info (bool): If the results will be plotted
+    -----------------------------------------
+    Returns:
+        (Dictionary): 
+            "n_qubits" : (list[int])
+            "var_value" : (list[float])
+            "var_deriv" : (list[float])
+            "value_slope" : (int)
+            "value_ord" : (int)
+            "value_rsquare" : (int)
+            "deriv_slope" : (int)
+            "deriv_ord" : (int)
+            "deriv_rsquare" : (int)
+    """
+    
+    data = {
+        "n_qubits": [],
+        "var_value": [],
+        "var_deriv": [],
+        "value_slope": 0,
+        "value_ord": 0,
+        "value_rsquare": 0,
+        "deriv_slope": 0,
+        "deriv_ord": 0,
+        "deriv_rsquare": 0
+    }
+
+    original_noise = NoiseModel.from_backend(fake_backend)
+
+    # Escalado del error (por ejemplo, aumentar 50%) -> 1.5
+    # Usa <1.0 para reducir el ruido
+    # Crear un nuevo modelo de ruido escalado
+    scaled_noise = NoiseModel()
+
+    # Copiar y escalar errores de compuertas
+    for instr, qubits in original_noise._local_quantum_errors.items():
+        for q, err in qubits.items():
+            prob = err.to_dict()['probabilities'][0]  # Supone un solo error tipo
+            new_prob = min(prob * noise_scale, 1.0)  # Asegúrate de no pasar de 1
+            gate_name = instr
+            qubit = q
+
+            # Crear nuevo error con misma estructura
+            if len(qubit) == 1:
+                new_error = depolarizing_error(new_prob, 1)
+            elif len(qubit) == 2:
+                new_error = depolarizing_error(new_prob, 2)
+            else:
+                continue  # No soportamos otros tamaños aquí
+
+            scaled_noise.add_quantum_error(new_error, gate_name, qubit)
+
+    # Ahora usas scaled_noise en el simulador
+    noisy_simulator = AerSimulator(noise_model=scaled_noise)
+
+    # Creo el estimator para el circuito ruidoso
+    estimator = BackendEstimator(backend=noisy_simulator)
+
+    for i in range(minQubits, maxQubits+1):
+        
+        current_observable=expand_observable(base_observable, i)
+        ansatz_circuit, num_params = ansantz_function(i)
+
+        if print_info:
+            print("\n=====================================================")
+            print(f"Calculando varianzas con {i} qubits.\n")
+        
+        var_value, var_deriv = get_variances_data(num_params, ansatz_circuit, current_observable, estimator, index, num_shots)
+
+        # Current iteration information
+        if print_info:
+            print(f"Varianza del valor esperado: {var_value}")
+            print(f"Varianza de la derivada: {var_deriv}")
+
+        data["n_qubits"].append(i)
+        data["var_value"].append(var_value)
+        data["var_deriv"].append(var_deriv)
+
+    # Regression
+    if do_regress:
+        value_regress = linregress(data["n_qubits"], np.log(data["var_value"]))
+        deriv_regress = linregress(data["n_qubits"], np.log(data["var_deriv"]))
+
+        data["value_slope"] = value_regress[0]
+        data["value_ord"] = value_regress[1]
+        data["value_rsquare"] = value_regress[2]**2
+
+        data["deriv_slope"] = deriv_regress[0]
+        data["deriv_ord"] = deriv_regress[1]
+        data["deriv_rsquare"] = deriv_regress[2]**2
+
+        if print_info:
+            print("\n=====================================================")
+            print(f"Pendiente para valor esperado: {data['value_slope']}.")
+            print(f"R^2 para valor esperado: {data['value_rsquare']}.")
+
+            print("\n=====================================================")
+            print(f"Pendiente para derivada: {data['deriv_slope']}.")
+            print(f"R^2 para derivada: {data['deriv_rsquare']}.")
+    
+    # Shows result's concentration and its derivative
+    if plot_info:
+        fig, ax = plt.subplots()
+        
+        # Scatter
+        ax.scatter(data["n_qubits"], data["var_value"], label=r"Var($\langle O\rangle$)")
+        ax.scatter(data["n_qubits"], data["var_deriv"], label=rf"Var($\partial_{index}\langle O\rangle$)")
+
+        # Tendencies
+        if do_regress:
+            base = np.linspace(minQubits, maxQubits, 100)
+            ax.plot(base, np.exp(data["value_slope"]*base+data["value_ord"]), color="black", label=r"Tendencia: Var($\langle O\rangle$)")
+            ax.plot(base, np.exp(data["deriv_slope"]*base+data["deriv_ord"]), color="red", label=rf"Tendencia: Var($\partial_{index}\langle O\rangle$)")
+
+        # Settings
+        ax.set_xlabel(r"$N$ qubits")
+        ax.set_title(rf"BP en VQE, variando el parámetro $\theta_{index}$")
+        ax.set_yscale("log")
+        ax.legend()
+        plt.show()
+
+    return data
+
+
+
 
 def variances_vs_noise(ansatz_circuit, min_noise, max_noise, n_noise_levels, observable, index, fake_backend, num_shots, print_info, plot_info, do_regress):
 
@@ -414,7 +554,7 @@ def variances_vs_noise(ansatz_circuit, min_noise, max_noise, n_noise_levels, obs
 
     # Escalado del error (por ejemplo, aumentar 50%) -> 1.5
     # Usa <1.0 para reducir el ruido
-    for scaling_factor in range(min_noise, max_noise, n_noise_levels):
+    for scaling_factor in np.linspace(min_noise, max_noise, n_noise_levels):
         # Crear un nuevo modelo de ruido escalado
         scaled_noise = NoiseModel()
 
@@ -495,7 +635,7 @@ def variances_vs_noise(ansatz_circuit, min_noise, max_noise, n_noise_levels, obs
             ax.plot(base, np.exp(data["deriv_slope"]*base+data["deriv_ord"]), color="red", label=rf"Tendencia: Var($\partial_{index}\langle O\rangle$)")
 
         # Settings
-        ax.set_xlabel(r"$N$ qubits")
+        ax.set_xlabel(r"Escala de ruido")
         ax.set_title(rf"BP en VQE, variando el parámetro $\theta_{index}$")
         ax.set_yscale("log")
         ax.legend()
