@@ -176,9 +176,6 @@ class QAOAPass(TransformationPass):
         gammas = ParameterVector("γ", self.num_layers)
         betas = ParameterVector("β", self.num_layers)
 
-        # Add initial state
-        qaoa_circuit.compose(self.init_state, inplace = True)
-
         # Iterate over number of qaoa layers and alternate cost/reversed cost and mixer
         bind_dict = {cost_layer.parameters[0]: gammas}
         bound_cost_layer = cost_layer.assign_parameters(bind_dict)
