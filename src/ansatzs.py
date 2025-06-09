@@ -1,6 +1,11 @@
 from qiskit.circuit import QuantumCircuit, Parameter
 from qiskit.circuit.library import NLocal, TwoLocal, CCXGate, CRZGate, RXGate
 import numpy as np
+from qiskit import QuantumCircuit
+from qiskit.transpiler import PassManager
+from qiskit.transpiler.passes import (HighLevelSynthesis, InverseCancellation)
+from qiskit.transpiler.passes.routing.commuting_2q_gate_routing import (SwapStrategy, FindCommutingPauliEvolutions, Commuting2qGateRouter)
+from qiskit.circuit.library import CXGate
 
 
 
@@ -144,36 +149,19 @@ def build_Surf_ansatz(num_qubits: int, layers: int = 1) -> tuple[QuantumCircuit,
         
     return qc, 2
 
-from qiskit import QuantumCircuit
-from qiskit.quantum_info import SparsePauliOp
-from qiskit.circuit.library import QAOAAnsatz
-from qiskit.transpiler import PassManager
-from qiskit.transpiler.passes import (HighLevelSynthesis, InverseCancellation)
-from qiskit.transpiler.passes.routing.commuting_2q_gate_routing import (SwapStrategy, FindCommutingPauliEvolutions, Commuting2qGateRouter)
-from qiskit.circuit.library import CXGate
 
-def is_two_qubits(pauli_string):
-    """Function that returns an operator if it acts on 2 qubits"""
-    return pauli_string.count('I') == len(pauli_string) - 1
 
-def optimize_qaoa(cost_operator):
-    # Separate 2 qubit gates from other gates
-    pauli_list = cost_operator.to_list()
-    two_qubits = [(p, c) for p, c in pauli_list if not is_two_qubits(p)]
-    others    = [(p, c) for p, c in pauli_list if is_two_qubits(p)]
-    cost_2qubits = SparsePauliOp.from_list(two_qubits)
-    cost_other = SparsePauliOp.from_list(others)
 
+def optimize_ansatz(ansatz_naive):
     # Choose swap strategy (in this case -> line)
-    num_qubits=cost_operator.num_qubits
+    num_qubits=ansatz_naive.num_qubits
     swap_strategy = SwapStrategy.from_line([i for i in range(num_qubits)])
     edge_coloring = {(idx, idx + 1): (idx + 1) % 2 for idx in range(num_qubits)}
 
     # Define pass manager
-    init_cost_layer = PassManager([FindCommutingPauliEvolutions(), Commuting2qGateRouter(swap_strategy, edge_coloring,), HighLevelSynthesis(basis_gates=["x", "cx", "sx", "rz", "id"]), InverseCancellation(gates_to_cancel=[CXGate()])])
+    init_cost_layer = PassManager([FindCommutingPauliEvolutions(), Commuting2qGateRouter(swap_strategy, edge_coloring,), HighLevelSynthesis(basis_gates=["x", "u", "h", "cx", "sx", "rz", "rx"]), InverseCancellation(gates_to_cancel=[CXGate()])])
 
     # Create a circuit for the 2 qubit gates and optimize it with the cost layer pass manager
-    qaoa_2qubits = QAOAAnsatz(cost_operator=cost_2qubits, reps=1, initial_state=QuantumCircuit(num_qubits), mixer_operator=QuantumCircuit(num_qubits))
-    qaoa_2qubits_opt=init_cost_layer.run(qaoa_2qubits)
+    ansatz_opt=init_cost_layer.run(ansatz_naive)
 
-    return qaoa_2qubits_opt
+    return ansatz_opt
