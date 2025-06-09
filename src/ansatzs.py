@@ -5,7 +5,7 @@ from qiskit import QuantumCircuit
 from qiskit.transpiler import PassManager
 from qiskit.transpiler.passes import (HighLevelSynthesis, InverseCancellation)
 from qiskit.transpiler.passes.routing.commuting_2q_gate_routing import (SwapStrategy, FindCommutingPauliEvolutions, Commuting2qGateRouter)
-from qiskit.circuit.library import CXGate
+from qiskit.circuit.library import CXGate, RZGate, RXGate, SXGate, XGate, HGate, UGate
 
 
 
@@ -159,7 +159,7 @@ def optimize_ansatz(ansatz_naive):
     edge_coloring = {(idx, idx + 1): (idx + 1) % 2 for idx in range(num_qubits)}
 
     # Define pass manager
-    init_cost_layer = PassManager([FindCommutingPauliEvolutions(), Commuting2qGateRouter(swap_strategy, edge_coloring,), HighLevelSynthesis(basis_gates=["x", "u", "h", "cx", "sx", "rz", "rx"]), InverseCancellation(gates_to_cancel=[CXGate()])])
+    init_cost_layer = PassManager([FindCommutingPauliEvolutions(), Commuting2qGateRouter(swap_strategy, edge_coloring,), HighLevelSynthesis(basis_gates=["x", "u", "h", "cx", "sx", "rz", "rx"]), InverseCancellation(gates_to_cancel=[CXGate(), XGate(), HGate()])])
 
     # Create a circuit for the 2 qubit gates and optimize it with the cost layer pass manager
     ansatz_opt=init_cost_layer.run(ansatz_naive)
