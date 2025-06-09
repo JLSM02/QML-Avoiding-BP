@@ -178,4 +178,3 @@ def optimize_qaoa(cost_operator):
 
     return qaoa_2qubits_opt
 
-SparsePauliOp('YYYY', coeff=0.33)

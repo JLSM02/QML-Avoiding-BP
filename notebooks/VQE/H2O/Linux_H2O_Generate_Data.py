@@ -20,6 +20,25 @@ def hamiltonians(geometry, dist):
     mapper = JordanWignerMapper()
     hamiltonian = mapper.map(hamiltonian)
 
+    # Definir parámetros
+    num_spatial_orbitals = es_problem.num_spin_orbitals // 2  
+    num_particles = es_problem.num_particles  
+
+    # Crear el estado de Hartree-Fock
+    hf_initial_state = HartreeFock(
+        num_spatial_orbitals=num_spatial_orbitals,
+        num_particles=num_particles,
+        qubit_mapper=mapper
+    )
+
+    # Crear el ansatz UCCSD
+    ansatz_H2O = UCCSD(
+        num_spatial_orbitals=num_spatial_orbitals,
+        num_particles=num_particles,
+        qubit_mapper=mapper,
+        initial_state=hf_initial_state
+    ) 
+
     with open(f"notebooks/VQE/H2O/data/hamiltonian{dist:.3f}.pkl", "wb") as f:
         pickle.dump(hamiltonian, f)
 
@@ -28,6 +47,10 @@ def hamiltonians(geometry, dist):
 
     with open(f"notebooks/VQE/H2O/data/nuclear_repulsion{dist:.3f}.pkl", "wb") as f:
         pickle.dump(nuclear_repulsion, f)
+
+    with open(f"notebooks/VQE/H2O/data/ansatz{dist:.3f}.pkl", "wb") as f:
+        pickle.dump(ansatz_H2O, f)
+
 
 # For different distances
 distances = np.linspace(0.25, 4, 16)
