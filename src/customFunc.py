@@ -526,7 +526,7 @@ def noisy_variance_vs_nQubits(ansantz_function, fake_backend, noise_scale, minQu
 
         # Settings
         ax.set_xlabel(r"$N$ qubits")
-        ax.set_title(rf"BP en VQE, variando el parámetro $\theta_{index}$")
+        ax.set_title(rf"BP en VQE, variando el parámetro $\theta_{index}$, con escala de ruido {noise_scale:.3f}")
         ax.set_yscale("log")
         ax.legend()
         plt.show()

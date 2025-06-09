@@ -165,3 +165,4 @@ def optimize_ansatz(ansatz_naive):
     ansatz_opt=init_cost_layer.run(ansatz_naive)
 
     return ansatz_opt
+
