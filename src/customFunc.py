@@ -437,36 +437,42 @@ def noisy_variance_vs_nQubits(ansantz_function, fake_backend, noise_scale, minQu
         "deriv_rsquare": 0
     }
 
-    original_noise = NoiseModel.from_backend(fake_backend)
+    # Si escalo o no el ruido
+    if noise_scale != 1:
+        original_noise = NoiseModel.from_backend(fake_backend)
 
-    # Escalado del error (por ejemplo, aumentar 50%) -> 1.5
-    # Usa <1.0 para reducir el ruido
-    # Crear un nuevo modelo de ruido escalado
-    scaled_noise = NoiseModel()
+        # Escalado del error (por ejemplo, aumentar 50%) -> 1.5
+        # Usa <1.0 para reducir el ruido
+        # Crear un nuevo modelo de ruido escalado
+        scaled_noise = NoiseModel()
 
-    # Copiar y escalar errores de compuertas
-    for instr, qubits in original_noise._local_quantum_errors.items():
-        for q, err in qubits.items():
-            prob = err.to_dict()['probabilities'][0]  # Supone un solo error tipo
-            new_prob = min(prob * noise_scale, 1.0)  # Asegúrate de no pasar de 1
-            gate_name = instr
-            qubit = q
+        # Copiar y escalar errores de compuertas
+        for instr, qubits in original_noise._local_quantum_errors.items():
+            for q, err in qubits.items():
+                prob = err.to_dict()['probabilities'][0]  # Supone un solo error tipo
+                new_prob = min(prob * noise_scale, 1.0)  # Asegúrate de no pasar de 1
+                gate_name = instr
+                qubit = q
 
-            # Crear nuevo error con misma estructura
-            if len(qubit) == 1:
-                new_error = depolarizing_error(new_prob, 1)
-            elif len(qubit) == 2:
-                new_error = depolarizing_error(new_prob, 2)
-            else:
-                continue  # No soportamos otros tamaños aquí
+                # Crear nuevo error con misma estructura
+                if len(qubit) == 1:
+                    new_error = depolarizing_error(new_prob, 1)
+                elif len(qubit) == 2:
+                    new_error = depolarizing_error(new_prob, 2)
+                else:
+                    continue  # No soportamos otros tamaños aquí
 
-            scaled_noise.add_quantum_error(new_error, gate_name, qubit)
+                scaled_noise.add_quantum_error(new_error, gate_name, qubit)
 
-    # Ahora usas scaled_noise en el simulador
-    noisy_simulator = AerSimulator(noise_model=scaled_noise)
+        # Ahora usas scaled_noise en el simulador
+        noisy_simulator = AerSimulator(noise_model=scaled_noise)
 
-    # Creo el estimator para el circuito ruidoso
-    estimator = BackendEstimator(backend=noisy_simulator)
+        # Creo el estimator para el circuito ruidoso
+        estimator = BackendEstimator(backend=noisy_simulator)
+    
+    # Si no escalo el ruido, uso el fakeBackend directamente
+    else:
+        estimator = BackendEstimator(fake_backend)
 
     for i in range(minQubits, maxQubits+1):
         
