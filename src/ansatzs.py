@@ -5,7 +5,7 @@ from qiskit import QuantumCircuit
 from qiskit.transpiler import PassManager
 from qiskit.transpiler.passes import (HighLevelSynthesis, InverseCancellation)
 from qiskit.transpiler.passes.routing.commuting_2q_gate_routing import (SwapStrategy, FindCommutingPauliEvolutions, Commuting2qGateRouter)
-from qiskit.circuit.library import CXGate, RZGate, RXGate, SXGate, XGate, HGate, UGate
+from qiskit.circuit.library import CXGate, RZGate, RXGate, XGate, HGate, SXGate, SXdgGate, UGate
 
 
 
@@ -153,6 +153,21 @@ def build_Surf_ansatz(num_qubits: int, layers: int = 1) -> tuple[QuantumCircuit,
 
 
 def optimize_ansatz(ansatz_naive):
+    # Choose swap strategy (in this case -> line)
+    num_qubits=ansatz_naive.num_qubits
+    swap_strategy = SwapStrategy.from_line([i for i in range(num_qubits)])
+    edge_coloring = {(idx, idx + 1): (idx + 1) % 2 for idx in range(num_qubits)}
+
+    # Define pass manager
+    init_cost_layer = PassManager([FindCommutingPauliEvolutions(), Commuting2qGateRouter(swap_strategy, edge_coloring,), HighLevelSynthesis(basis_gates=["x", "u", "h", "cx", "sx", "rz", "rx"]), InverseCancellation(gates_to_cancel=[CXGate(), XGate(), HGate(), (RZGate(np.pi), RZGate(-np.pi)), (RZGate(np.pi/2), RZGate(-np.pi/2)), (SXGate(),SXGate())])])
+
+    # Create a circuit for the 2 qubit gates and optimize it with the cost layer pass manager
+    ansatz_opt=init_cost_layer.run(ansatz_naive)
+
+    return ansatz_opt
+
+
+def simple_optimize_ansatz_(ansatz_naive):
     # Choose swap strategy (in this case -> line)
     num_qubits=ansatz_naive.num_qubits
     swap_strategy = SwapStrategy.from_line([i for i in range(num_qubits)])
