@@ -565,7 +565,7 @@ def variance_vs_layers(ansantz_function, minLayers: int, maxLayers: int, n_qubit
     # Creo el estimator para el circuito ruidoso
     estimator = Estimator()
     
-    for layers in range(minLayers, maxLayers):
+    for layers in range(minLayers, maxLayers+1):
 
         current_observable=expand_observable(base_observable, n_qubits)
         ansatz_circuit, num_params = ansantz_function(n_qubits, layers)
