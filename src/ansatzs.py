@@ -6,6 +6,7 @@ from qiskit.transpiler import PassManager
 from qiskit.transpiler.passes import (HighLevelSynthesis, InverseCancellation)
 from qiskit.transpiler.passes.routing.commuting_2q_gate_routing import (SwapStrategy, FindCommutingPauliEvolutions, Commuting2qGateRouter)
 from qiskit.circuit.library import CXGate, RZGate, RXGate, XGate, HGate, SXGate, SXdgGate, UGate
+from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
 
 
 
@@ -151,7 +152,6 @@ def build_Surf_ansatz(num_qubits: int, layers: int = 1) -> tuple[QuantumCircuit,
 
 
 
-
 def optimize_ansatz(ansatz_naive):
     # Choose swap strategy (in this case -> line)
     num_qubits=ansatz_naive.num_qubits
@@ -165,6 +165,34 @@ def optimize_ansatz(ansatz_naive):
     ansatz_opt=init_cost_layer.run(ansatz_naive)
 
     return ansatz_opt
+
+
+def get_cx_count(ansatz, backend):
+    pm = generate_preset_pass_manager(backend=backend, optimization_level=3)
+    transpiled = pm.run(ansatz)
+    ops = transpiled.count_ops()
+    return transpiled, ops.get('cx', 0)
+
+
+
+def iterate_ansatz_opt(ansatz_naive, backend):
+    # Inicialization
+    ansatz_opt = optimize_ansatz(ansatz_naive)
+    transpiled_ansatz_opt, num_cx_prev = get_cx_count(ansatz_opt, backend)
+
+    # Optimization loop
+    while True:
+        ansatz_opt_prev=ansatz_opt
+        transpiled_ansatz_opt_prev=transpiled_ansatz_opt
+        ansatz_opt = optimize_ansatz(ansatz_opt)
+        transpiled_ansatz_opt, num_cx = get_cx_count(ansatz_opt, backend)
+    
+        if num_cx < num_cx_prev:
+            num_cx_prev = num_cx
+        else:
+            break
+    return transpiled_ansatz_opt_prev, num_cx_prev, ansatz_opt_prev
+
 
 
 def simple_optimize_ansatz_(ansatz_naive):
