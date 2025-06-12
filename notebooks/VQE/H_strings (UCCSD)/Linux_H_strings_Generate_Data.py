@@ -6,6 +6,8 @@ from qiskit_nature.second_q.circuit.library import HartreeFock, UCCSD
 
 import pickle
 
+# CADENAS DE HIDRÓGENO 
+
 def generate_linear_chain_geometry(n_atoms, dist):
     # Genera una cadena lineal en el eje z
     positions = [f"H 0.0 0.0 {i * dist}" for i in range(n_atoms)]
@@ -59,3 +61,48 @@ def hamiltonians(n_atoms, dist):
 dist = 0.7
 for n_atoms in [2, 4, 6, 8]:
     hamiltonians(n_atoms=n_atoms, dist=dist)
+
+
+
+# MOLÉCULA O3
+
+# Parámetros
+dist = 1.28  # distancia O-O en Ångstroms
+angle = 117 * np.pi / 180  # ángulo en radianes
+
+# Coordenadas
+x1, y1 = -dist/2 * np.cos(angle/2), dist/2 * np.sin(angle/2)
+x3, y3 = dist/2 * np.cos(angle/2), dist/2 * np.sin(angle/2)
+
+geometry = f"O {x1:.4f} {y1:.4f} 0.0; O 0.0 0.0 0.0; O {x3:.4f} {y3:.4f} 0.0"
+
+# Configuramos el driver PySCF
+driver = PySCFDriver(atom=geometry, basis='sto3g')
+
+# Ejecutamos el driver para obtener el problema de la estructura electrónica
+es_problem = driver.run()
+
+# Construimos el Hamiltoniano después de la segunda cuantización
+hamiltonian = es_problem.second_q_ops()[0]
+
+# Aplicamos las transformaciones de Jordan-Wigner
+mapper = JordanWignerMapper()
+hamiltonian = mapper.map(hamiltonian)
+
+# Ansatz
+init_state = HartreeFock(
+    num_spatial_orbitals=es_problem.num_spatial_orbitals,
+    num_particles=es_problem.num_particles,
+    qubit_mapper=mapper
+)
+
+ansatz_O3 = UCCSD(
+    num_spatial_orbitals=es_problem.num_spatial_orbitals,
+    num_particles=es_problem.num_particles,
+    qubit_mapper=mapper,
+    initial_state=init_state
+)
+
+base_path = f"notebooks/VQE/H_strings (UCCSD)/data/"
+with open(f"{base_path}ansatz_O3.pkl", "wb") as f:
+        pickle.dump(ansatz_O3, f)
