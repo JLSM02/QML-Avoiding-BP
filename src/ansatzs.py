@@ -194,18 +194,3 @@ def iterate_ansatz_opt(ansatz_naive, backend):
     return ansatz_opt_prev, transpiled_ansatz_opt_prev, num_cx_prev
 
 
-
-def simple_optimize_ansatz_(ansatz_naive):
-    # Choose swap strategy (in this case -> line)
-    num_qubits=ansatz_naive.num_qubits
-    swap_strategy = SwapStrategy.from_line([i for i in range(num_qubits)])
-    edge_coloring = {(idx, idx + 1): (idx + 1) % 2 for idx in range(num_qubits)}
-
-    # Define pass manager
-    init_cost_layer = PassManager([FindCommutingPauliEvolutions(), Commuting2qGateRouter(swap_strategy, edge_coloring,), HighLevelSynthesis(basis_gates=["x", "u", "h", "cx", "sx", "rz", "rx"]), InverseCancellation(gates_to_cancel=[CXGate(), XGate(), HGate()])])
-
-    # Create a circuit for the 2 qubit gates and optimize it with the cost layer pass manager
-    ansatz_opt=init_cost_layer.run(ansatz_naive)
-
-    return ansatz_opt
-
