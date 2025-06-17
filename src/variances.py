@@ -6,7 +6,8 @@ from scipy.stats import linregress
 from qiskit_aer.noise import NoiseModel, depolarizing_error
 from qiskit.primitives import Estimator, BackendEstimator
 from qiskit_aer import AerSimulator
-
+from qiskit.quantum_info import SparsePauliOp
+from qiskit.providers.fake_provider import fake_backend
 
 
 # ====================================================================
@@ -14,19 +15,22 @@ from qiskit_aer import AerSimulator
 # ====================================================================
 
 
-def variance_vs_nQubits(ansantz_function, minQubits: int, maxQubits: int, base_observable, index: int, num_shots=100, print_info: bool=True, plot_info: bool=True, do_regress : bool=False, only_even_qubits : bool=False):
+def variance_vs_nQubits(ansantz_function : function, minQubits: int, maxQubits: int, base_observable : SparsePauliOp, index: int, num_shots : int = 100, print_info: bool=True, plot_info: bool=True, do_regress : bool=False, only_even_qubits : bool=False, print_progress : bool=False):
     """
     Obtain the variances of the expectation value and the given derivative using different numbers of qubits.
     -----------------------------------------
     Args:
-        ansatz_function (method): A function defined as follows: ansatz_function(N_qubits (int)) -> qc (QuantumCircuit), num_params (int)
+        ansatz_function (function): A function defined as follows: ansatz_function(N_qubits (int)) -> qc (QuantumCircuit), num_params (int)
         minQubits (int): The smallest number of qubits used.
         maxQubits (int): The greatest number of qubits used.
         base_observable (SparsePauliOp): The observable to be measured in its minimal form, it should use minQubits number of qubits.
         index (int): With respect to which parameter the derivative will be taken.
         num_shots (int): Number of samples taken to compute the variances.
-        print_info (bool): If the results will be printed
-        plot_info (bool): If the results will be plotted
+        print_info (bool): If the results will be printed.
+        plot_info (bool): If the results will be plotted.
+        do_regress (bool): If a linear regression will be performed.
+        only_even_qubits (bool): To use only a even number of qubits, usefull for UCCSD.
+        print_progress (bool): If the completation percentage of the current variances will be printed, useful for heavy calculations.
     -----------------------------------------
     Returns:
         (Dictionary): 
@@ -66,7 +70,7 @@ def variance_vs_nQubits(ansantz_function, minQubits: int, maxQubits: int, base_o
                 print("\n=====================================================")
                 print(f"Calculando varianzas con {i} qubits.\n")
             
-            var_value, var_deriv = cf.get_variances_data(num_params, ansatz_circuit, current_observable, estimator, index, num_shots)
+            var_value, var_deriv = cf.get_variances_data(num_params, ansatz_circuit, current_observable, estimator, index, num_shots, print_progress=print_progress)
 
             # Current iteration information
             if print_info:
@@ -124,19 +128,24 @@ def variance_vs_nQubits(ansantz_function, minQubits: int, maxQubits: int, base_o
 
 
 
-def noisy_variance_vs_nQubits(ansantz_function, fake_backend, noise_scale, minQubits: int, maxQubits: int, base_observable, index: int, num_shots=100, print_info: bool=True, plot_info: bool=True, do_regress : bool=False, only_even_qubits : bool = False, print_progress : bool = False):
+def noisy_variance_vs_nQubits(ansantz_function : function, noise_backend : fake_backend, noise_scale : float, minQubits: int, maxQubits: int, base_observable, index: int, num_shots : int=100, print_info: bool=True, plot_info: bool=True, do_regress : bool=False, only_even_qubits : bool=False, print_progress : bool=False):
     """
     Obtain the variances of the expectation value and the given derivative using different numbers of qubits.
     -----------------------------------------
     Args:
         ansatz_function (method): A function defined as follows: ansatz_function(N_qubits (int)) -> qc (QuantumCircuit), num_params (int)
+        noise_backend (fake_backend) The backend from which the noise model will be extracted.
+        noise_scale (float): The amount of noise from the given fake_backend to be used.
         minQubits (int): The smallest number of qubits used.
         maxQubits (int): The greatest number of qubits used.
         base_observable (SparsePauliOp): The observable to be measured in its minimal form, it should use minQubits number of qubits.
         index (int): With respect to which parameter the derivative will be taken.
         num_shots (int): Number of samples taken to compute the variances.
-        print_info (bool): If the results will be printed
-        plot_info (bool): If the results will be plotted
+        print_info (bool): If the results will be printed.
+        plot_info (bool): If the results will be plotted.
+        do_regress (bool): If a linear regression will be performed.
+        only_even_qubits (bool): To use only a even number of qubits, usefull for UCCSD.
+        print_progress (bool): If the completation percentage of the current variances will be printed, useful for heavy calculations.
     -----------------------------------------
     Returns:
         (Dictionary): 
@@ -165,7 +174,7 @@ def noisy_variance_vs_nQubits(ansantz_function, fake_backend, noise_scale, minQu
 
     # Si escalo o no el ruido
     if noise_scale != 1:
-        original_noise = NoiseModel.from_backend(fake_backend)
+        original_noise = NoiseModel.from_backend(noise_backend)
 
         # Escalado del error (por ejemplo, aumentar 50%) -> 1.5
         # Usa <1.0 para reducir el ruido
@@ -270,10 +279,39 @@ def noisy_variance_vs_nQubits(ansantz_function, fake_backend, noise_scale, minQu
 
 
 
-def variance_vs_layers(ansantz_function, minLayers: int, maxLayers: int, n_qubits : int, base_observable, index: int, num_shots=100, print_info: bool=True, plot_info: bool=True, do_regress : bool=False):
+def variance_vs_layers(ansantz_function : function, minLayers: int, maxLayers: int, n_qubits : int, base_observable : SparsePauliOp, index: int, num_shots : int=100, print_info: bool=True, plot_info: bool=True, do_regress : bool=False, print_progress : bool=False):
+    """
+    Obtain the variances of the expectation value and the given derivative using different numbers of qubits.
+    -----------------------------------------
+    Args:
+        ansatz_function (function): A function defined as follows: ansatz_function(N_qubits (int)) -> qc (QuantumCircuit), num_params (int)
+        minLayers (int): The smallest number of layers used.
+        maxlayers (int): The greatest number of layers used.
+        n_qubits (int): The number of qubits to be used.
+        base_observable (SparsePauliOp): The observable to be measured in its minimal form, it should use minQubits number of qubits.
+        index (int): With respect to which parameter the derivative will be taken.
+        num_shots (int): Number of samples taken to compute the variances.
+        print_info (bool): If the results will be printed.
+        plot_info (bool): If the results will be plotted.
+        do_regress (bool): If a linear regression will be performed.
+        only_even_qubits (bool): To use only a even number of qubits, usefull for UCCSD.
+        print_progress (bool): If the completation percentage of the current variances will be printed, useful for heavy calculations.
+    -----------------------------------------
+    Returns:
+        (Dictionary): 
+            "n_layers" : (list[int])
+            "var_value" : (list[float])
+            "var_deriv" : (list[float])
+            "value_slope" : (int)
+            "value_ord" : (int)
+            "value_rsquare" : (int)
+            "deriv_slope" : (int)
+            "deriv_ord" : (int)
+            "deriv_rsquare" : (int)
+    """
 
     data = {
-        "layers": [],
+        "n_layers": [],
         "var_value": [],
         "var_deriv": [],
         "value_slope": 0,
@@ -296,7 +334,7 @@ def variance_vs_layers(ansantz_function, minLayers: int, maxLayers: int, n_qubit
             print("\n=====================================================")
             print(f"Calculando varianzas con nº capas: {layers}.\n")
         
-        var_value, var_deriv = cf.get_variances_data(num_params, ansatz_circuit, current_observable, estimator, index, num_shots)
+        var_value, var_deriv = cf.get_variances_data(num_params, ansatz_circuit, current_observable, estimator, index, num_shots, print_progress=print_progress)
 
         # Current iteration information
         if print_info:
@@ -357,10 +395,41 @@ def variance_vs_layers(ansantz_function, minLayers: int, maxLayers: int, n_qubit
 
 
 
-def noisy_variance_vs_layers(ansantz_function, fake_backend, noise_scale, minLayers: int, maxLayers: int, n_qubits : int, base_observable, index: int, num_shots=100, print_info: bool=True, plot_info: bool=True, do_regress : bool=False):
-
+def noisy_variance_vs_layers(ansantz_function : function, noise_backend : fake_backend, noise_scale : float, minLayers: int, maxLayers: int, n_qubits : int, base_observable, index: int, num_shots : int=100, print_info: bool=True, plot_info: bool=True, do_regress : bool=False, print_progress : bool=False):
+    """
+    Obtain the variances of the expectation value and the given derivative using different numbers of qubits.
+    -----------------------------------------
+    Args:
+        ansatz_function (method): A function defined as follows: ansatz_function(N_qubits (int)) -> qc (QuantumCircuit), num_params (int)
+        noise_backend (fake_backend) The backend from which the noise model will be extracted.
+        noise_scale (float): The amount of noise from the given fake_backend to be used.
+        minLayers (int): The smallest number of layers used.
+        maxLayers (int): The greatest number of layers used.
+        n_qubits (int): The number of qubits to be used.
+        base_observable (SparsePauliOp): The observable to be measured in its minimal form, it should use minQubits number of qubits.
+        index (int): With respect to which parameter the derivative will be taken.
+        num_shots (int): Number of samples taken to compute the variances.
+        print_info (bool): If the results will be printed.
+        plot_info (bool): If the results will be plotted.
+        do_regress (bool): If a linear regression will be performed.
+        only_even_qubits (bool): To use only a even number of qubits, usefull for UCCSD.
+        print_progress (bool): If the completation percentage of the current variances will be printed, useful for heavy calculations.
+    -----------------------------------------
+    Returns:
+        (Dictionary): 
+            "n_layers" : (list[int])
+            "var_value" : (list[float])
+            "var_deriv" : (list[float])
+            "value_slope" : (int)
+            "value_ord" : (int)
+            "value_rsquare" : (int)
+            "deriv_slope" : (int)
+            "deriv_ord" : (int)
+            "deriv_rsquare" : (int)
+    """
+      
     data = {
-        "layers": [],
+        "n_layers": [],
         "var_value": [],
         "var_deriv": [],
         "value_slope": 0,
@@ -373,7 +442,7 @@ def noisy_variance_vs_layers(ansantz_function, fake_backend, noise_scale, minLay
 
     # Si escalo o no el ruido
     if noise_scale != 1:
-        original_noise = NoiseModel.from_backend(fake_backend)
+        original_noise = NoiseModel.from_backend(noise_backend)
 
         # Escalado del error (por ejemplo, aumentar 50%) -> 1.5
         # Usa <1.0 para reducir el ruido
@@ -417,7 +486,7 @@ def noisy_variance_vs_layers(ansantz_function, fake_backend, noise_scale, minLay
             print("\n=====================================================")
             print(f"Calculando varianzas con nº capas: {layers}.\n")
         
-        var_value, var_deriv = cf.get_variances_data(num_params, ansatz_circuit, current_observable, estimator, index, num_shots)
+        var_value, var_deriv = cf.get_variances_data(num_params, ansatz_circuit, current_observable, estimator, index, num_shots, print_progress=print_progress)
 
         # Current iteration information
         if print_info:
