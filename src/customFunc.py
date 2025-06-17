@@ -136,6 +136,7 @@ def get_variances_data(num_params, ansatz, observable, estimator, index, num_sho
         observable (SparsePauliOp): The observable to be measured.
         index (int): With respect to which parameter the derivative will be taken.
         num_shots (int): Number of samples taken to compute the variances.
+        print_progress (bool): If the completation percentage of the current variances will be printed, useful for heavy calculations.
     -----------------------------------------
     Returns:
         (float): Variance of the expectation value of the observable.
