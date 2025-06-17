@@ -119,33 +119,25 @@ def build_twoLocal_ansatz(num_qubits: int, layers: int = 1) -> tuple[QuantumCirc
 
 
 def build_Surf_ansatz(num_qubits: int, layers: int = 1) -> tuple[QuantumCircuit, int]:
-
     
+    theta1 = Parameter("θ1")
+    theta2 = Parameter("θ2")
+    n = 6  # número de qubits
+
     qc = QuantumCircuit(num_qubits)
 
-    # Parameters list
-    thetas = [[Parameter(f'θ_{0}'), Parameter(f'θ_{1}')]]
+    for _l in range(layers):
+        # Bloque de RY
+        for i in range(num_qubits):
+            qc.ry(theta1, i)
 
-    # Add random gates
-    def rand_gate(theta, qubit):
-        r = np.random.random()
-
-        if r < 1/3:
-            qc.rx(theta, qubit)
-        elif r < 2/3:
-            qc.ry(theta, qubit)
-        else:
-            qc.rz(theta, qubit)
-
-    for l in range(layers):
-        
+        # Cadena de CNOTs
         for i in range(num_qubits - 1):
+            qc.cx(i, i + 1)
 
-            rand_gate(thetas[0][0], i)
-            rand_gate(thetas[0][1], i+1)
-            qc.cz(i, i + 1)
-
-        qc.barrier()
+        # Bloque de RZ
+        for i in range(num_qubits):
+            qc.rz(theta2, i)
         
     return qc, 2
 
