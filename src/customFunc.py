@@ -129,7 +129,7 @@ def evaluate_grad(params, ansatz, observable, estimator):
 # ====================================================================
 #            Function that calvulates the variances
 # ====================================================================
-def get_variances_data(num_params, ansatz, observable, estimator, index, num_shots=100):
+def get_variances_data(num_params, ansatz, observable, estimator, index, num_shots=100, print_progress : bool = False):
     """
     Get the variances of the expectation value of an observable and its derivative.
     -----------------------------------------
@@ -152,6 +152,9 @@ def get_variances_data(num_params, ansatz, observable, estimator, index, num_sho
     deriv_list = []
 
     for _ in range(num_shots):
+
+        if print_progress and (_ + 1) % (num_shots // 10) == 0:
+            print(int((_ + 1) / num_shots * 100), r"\% completado.")
 
         rand_param_vector = 2 * np.pi *np.random.random(num_params)
 
@@ -400,7 +403,7 @@ def variance_vs_nQubits(ansantz_function, minQubits: int, maxQubits: int, base_o
 # ====================================================================
 #            Look for BP by studying variances concentration
 # ====================================================================
-def noisy_variance_vs_nQubits(ansantz_function, fake_backend, noise_scale, minQubits: int, maxQubits: int, base_observable, index: int, num_shots=100, print_info: bool=True, plot_info: bool=True, do_regress : bool=False, only_even_qubits : bool = False):
+def noisy_variance_vs_nQubits(ansantz_function, fake_backend, noise_scale, minQubits: int, maxQubits: int, base_observable, index: int, num_shots=100, print_info: bool=True, plot_info: bool=True, do_regress : bool=False, only_even_qubits : bool = False, print_progress : bool = False):
     """
     Obtain the variances of the expectation value and the given derivative using different numbers of qubits.
     -----------------------------------------
@@ -487,7 +490,7 @@ def noisy_variance_vs_nQubits(ansantz_function, fake_backend, noise_scale, minQu
                 print("\n=====================================================")
                 print(f"Calculando varianzas con {i} qubits.\n")
             
-            var_value, var_deriv = get_variances_data(num_params, ansatz_circuit, current_observable, estimator, index, num_shots)
+            var_value, var_deriv = get_variances_data(num_params, ansatz_circuit, current_observable, estimator, index, num_shots, print_progress=print_progress)
 
             # Current iteration information
             if print_info:
