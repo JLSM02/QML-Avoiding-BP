@@ -44,7 +44,7 @@ def VQE_minimization(ansatz, observable, initial_guess: str = "zero", minimizer:
 
     # Optimization in layers
     res = minimize(cost_func, initial_param_vector, args=(ansatz, observable, estimator), method=minimizer)
-    return res.fun, cost_history_dict
+    return cost_history_dict
 
 def VQE_minimization_layer_training(ansatz, observable, num_layers: int, range_layers: int, direction: str = "forward", initial_guess: str = "zero", minimizer: str = "COBYLA"):
     """
@@ -113,4 +113,4 @@ def VQE_minimization_layer_training(ansatz, observable, num_layers: int, range_l
             next_param_layer = param_vector[:start]
             res = minimize(cost_func, next_param_layer, args=(ansatz, observable, param_vector, 0, start, estimator), method=minimizer)
             param_vector[:start] = res.x
-    return res.fun, cost_history_dict
+    return cost_history_dict
