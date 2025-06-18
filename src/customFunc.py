@@ -65,7 +65,7 @@ def evaluate_observable(params, ansatz, observable, estimator):
 # ====================================================================
 #         Function to get the derivative of an expectation value
 # ====================================================================
-def evaluate_deriv(params, ansatz, observable, index, estimator):
+def evaluate_deriv(params, ansatz, observable, index, estimator, use_shift_rule : bool = True, delta : float = 1e-5):
     """
     Computes the partial derivative of an observable with respect to the given parameter.
     -----------------------------------------
@@ -79,19 +79,34 @@ def evaluate_deriv(params, ansatz, observable, index, estimator):
     Returns:
         (float): Expectation value of the derivative of the observable.
     """
+    
+    if use_shift_rule:
+        # Shifts for parameter-shift
+        shifted_plus = params.copy()
+        shifted_plus[index] += np.pi / 2
 
-    # Shifts for parameter-shift
-    shifted_plus = params.copy()
-    shifted_plus[index] += np.pi / 2
+        shifted_minus = params.copy()
+        shifted_minus[index] -= np.pi / 2
 
-    shifted_minus = params.copy()
-    shifted_minus[index] -= np.pi / 2
-
-    value_plus = evaluate_observable(shifted_plus, ansatz, observable, estimator)
-    value_minus = evaluate_observable(shifted_minus, ansatz, observable, estimator)
+        value_plus = evaluate_observable(shifted_plus, ansatz, observable, estimator)
+        value_minus = evaluate_observable(shifted_minus, ansatz, observable, estimator)
 
 
-    deriv = 0.5 * (value_plus - value_minus)
+        deriv = 0.5 * (value_plus - value_minus)
+    
+    else:
+        # Forward and backward derivative
+        shifted_plus = params.copy()
+        shifted_plus[index] += delta
+
+        shifted_minus = params.copy()
+        shifted_minus[index] -= delta
+
+        value_plus = evaluate_observable(shifted_plus, ansatz, observable, estimator)
+        value_minus = evaluate_observable(shifted_minus, ansatz, observable, estimator)
+
+
+        deriv = (value_plus - value_minus)/delta
     
     return deriv
 
