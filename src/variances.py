@@ -1,5 +1,5 @@
 # Imports
-import customFunc as cf
+import src.customFunc as cf
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import linregress
@@ -15,7 +15,7 @@ from qiskit.providers.fake_provider import fake_backend
 # ====================================================================
 
 
-def variance_vs_nQubits(ansantz_function : function, minQubits: int, maxQubits: int, base_observable : SparsePauliOp, index: int, num_shots : int = 100, print_info: bool=True, plot_info: bool=True, do_regress : bool=False, only_even_qubits : bool=False, print_progress : bool=False):
+def variance_vs_nQubits(ansantz_function : function, minQubits: int, maxQubits: int, base_observable : SparsePauliOp, index: int, num_shots : int = 100, print_info: bool=True, plot_info: bool=True, do_regress : bool=False, only_even_qubits : bool=False, print_progress : bool=False, use_shift_rule : bool = True, delta : float = 1e-5):
     """
     Obtain the variances of the expectation value and the given derivative using different numbers of qubits.
     -----------------------------------------
@@ -70,7 +70,7 @@ def variance_vs_nQubits(ansantz_function : function, minQubits: int, maxQubits: 
                 print("\n=====================================================")
                 print(f"Calculando varianzas con {i} qubits.\n")
             
-            var_value, var_deriv = cf.get_variances_data(num_params, ansatz_circuit, current_observable, estimator, index, num_shots, print_progress=print_progress)
+            var_value, var_deriv = cf.get_variances_data(num_params, ansatz_circuit, current_observable, estimator, index, num_shots, print_progress=print_progress, use_shift_rule=use_shift_rule, delta=delta)
 
             # Current iteration information
             if print_info:
@@ -128,7 +128,7 @@ def variance_vs_nQubits(ansantz_function : function, minQubits: int, maxQubits: 
 
 
 
-def noisy_variance_vs_nQubits(ansantz_function : function, noise_backend : fake_backend, noise_scale : float, minQubits: int, maxQubits: int, base_observable, index: int, num_shots : int=100, print_info: bool=True, plot_info: bool=True, do_regress : bool=False, only_even_qubits : bool=False, print_progress : bool=False):
+def noisy_variance_vs_nQubits(ansantz_function : function, noise_backend : fake_backend, noise_scale : float, minQubits: int, maxQubits: int, base_observable, index: int, num_shots : int=100, print_info: bool=True, plot_info: bool=True, do_regress : bool=False, only_even_qubits : bool=False, print_progress : bool=False, use_shift_rule : bool = True, delta : float = 1e-5):
     """
     Obtain the variances of the expectation value and the given derivative using different numbers of qubits.
     -----------------------------------------
@@ -220,7 +220,7 @@ def noisy_variance_vs_nQubits(ansantz_function : function, noise_backend : fake_
                 print("\n=====================================================")
                 print(f"Calculando varianzas con {i} qubits.\n")
             
-            var_value, var_deriv = cf.get_variances_data(num_params, ansatz_circuit, current_observable, estimator, index, num_shots, print_progress=print_progress)
+            var_value, var_deriv = cf.get_variances_data(num_params, ansatz_circuit, current_observable, estimator, index, num_shots, print_progress=print_progress, use_shift_rule=use_shift_rule, delta=delta)
 
             # Current iteration information
             if print_info:
@@ -279,7 +279,7 @@ def noisy_variance_vs_nQubits(ansantz_function : function, noise_backend : fake_
 
 
 
-def variance_vs_layers(ansantz_function : function, minLayers: int, maxLayers: int, n_qubits : int, base_observable : SparsePauliOp, index: int, num_shots : int=100, print_info: bool=True, plot_info: bool=True, do_regress : bool=False, print_progress : bool=False):
+def variance_vs_layers(ansantz_function : function, minLayers: int, maxLayers: int, n_qubits : int, base_observable : SparsePauliOp, index: int, num_shots : int=100, print_info: bool=True, plot_info: bool=True, do_regress : bool=False, print_progress : bool=False, use_shift_rule : bool = True, delta : float = 1e-5):
     """
     Obtain the variances of the expectation value and the given derivative using different numbers of qubits.
     -----------------------------------------
@@ -334,7 +334,7 @@ def variance_vs_layers(ansantz_function : function, minLayers: int, maxLayers: i
             print("\n=====================================================")
             print(f"Calculando varianzas con nº capas: {layers}.\n")
         
-        var_value, var_deriv = cf.get_variances_data(num_params, ansatz_circuit, current_observable, estimator, index, num_shots, print_progress=print_progress)
+        var_value, var_deriv = cf.get_variances_data(num_params, ansatz_circuit, current_observable, estimator, index, num_shots, print_progress=print_progress, use_shift_rule=use_shift_rule, delta=delta)
 
         # Current iteration information
         if print_info:
@@ -395,7 +395,7 @@ def variance_vs_layers(ansantz_function : function, minLayers: int, maxLayers: i
 
 
 
-def noisy_variance_vs_layers(ansantz_function : function, noise_backend : fake_backend, noise_scale : float, minLayers: int, maxLayers: int, n_qubits : int, base_observable, index: int, num_shots : int=100, print_info: bool=True, plot_info: bool=True, do_regress : bool=False, print_progress : bool=False):
+def noisy_variance_vs_layers(ansantz_function : function, noise_backend : fake_backend, noise_scale : float, minLayers: int, maxLayers: int, n_qubits : int, base_observable, index: int, num_shots : int=100, print_info: bool=True, plot_info: bool=True, do_regress : bool=False, print_progress : bool=False, use_shift_rule : bool = True, delta : float = 1e-5):
     """
     Obtain the variances of the expectation value and the given derivative using different numbers of qubits.
     -----------------------------------------
@@ -486,7 +486,7 @@ def noisy_variance_vs_layers(ansantz_function : function, noise_backend : fake_b
             print("\n=====================================================")
             print(f"Calculando varianzas con nº capas: {layers}.\n")
         
-        var_value, var_deriv = cf.get_variances_data(num_params, ansatz_circuit, current_observable, estimator, index, num_shots, print_progress=print_progress)
+        var_value, var_deriv = cf.get_variances_data(num_params, ansatz_circuit, current_observable, estimator, index, num_shots, print_progress=print_progress, use_shift_rule=use_shift_rule, delta=delta)
 
         # Current iteration information
         if print_info:
