@@ -258,11 +258,11 @@ def VQE_minimization_AG(ansatz_circuit, observable : SparsePauliOp, stop_conditi
 
 
     # Save the results in the dictionary
-    data["minimum_value"].append(opt_value)
-    data["optimal_parameters"].append(opt_parametes)
-    data["n_evaluations"].append(n_evaluations)
-    data["n_generations"].append(n_generations)
-    data["cost_history_dict"].append(cost_history_dict)
+    data["minimum_value"] = opt_value
+    data["optimal_parameters"] = opt_parametes
+    data["n_evaluations"] = n_evaluations
+    data["n_generations"] = n_generations
+    data["cost_history_dict"] = cost_history_dict
 
     # Show the evolution of the cost function
     if plot_info:
