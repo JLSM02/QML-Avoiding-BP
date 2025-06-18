@@ -1,5 +1,5 @@
 # Imports
-import customFunc as cf
+import src.customFunc as cf
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import linregress
