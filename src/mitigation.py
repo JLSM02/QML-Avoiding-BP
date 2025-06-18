@@ -118,7 +118,6 @@ def VQE_minimization_layer_training(ansatz, observable, num_layers: int, range_l
             next_param_layer = param_vector[:start]
             res = minimize(cost_func, next_param_layer, args=(ansatz, observable, param_vector, 0, start, estimator), method=minimizer)
             param_vector[:start] = res.x
-<<<<<<< HEAD
     return res.fun, cost_history_dict
 
 
@@ -285,6 +284,3 @@ def VQE_minimization_AG(ansatz_function, minQubits: int, maxQubits: int, base_ob
             print("=====================================================")
 
     return data
-=======
-    return cost_history_dict
->>>>>>> dfa3863520f1d4bb181687103a72822e3259bdaf
