@@ -8,7 +8,7 @@ from qiskit.primitives import Estimator
 from deap import base, creator, tools
 
 
-def VQE_minimization(ansatz, observable, initial_guess: str = "zero", minimizer: str = "COBYLA"):
+def VQE_minimization(ansatz, observable: SparsePauliOp, initial_guess: str = "zero", minimizer: str = "COBYLA"):
     """
     Compute the VQE minimization algorithm.
     -----------------------------------------
@@ -19,7 +19,6 @@ def VQE_minimization(ansatz, observable, initial_guess: str = "zero", minimizer:
         minimizer (str): scipy.optimize.minimize possible optimization methods, default="COBYLA".
     -----------------------------------------
     Returns:
-        res.fun: optimized cost value
         cost_history_dict (dict): iterations and their cost value
     """
     estimator = Estimator()
@@ -52,7 +51,7 @@ def VQE_minimization(ansatz, observable, initial_guess: str = "zero", minimizer:
 
 
 
-def VQE_minimization_layer_training(ansatz, observable, num_layers: int, range_layers: int, direction: str = "forward", initial_guess: str = "zero", minimizer: str = "COBYLA"):
+def VQE_minimization_layer_training(ansatz, observable: SparsePauliOp, num_layers: int, range_layers: int, direction: str = "forward", initial_guess: str = "zero", minimizer: str = "COBYLA"):
     """
     Compute the VQE minimization algorithm using layer training.
     -----------------------------------------
@@ -66,7 +65,6 @@ def VQE_minimization_layer_training(ansatz, observable, num_layers: int, range_l
         minimizer (str): scipy.optimize.minimize possible optimization methods, default="COBYLA".
     -----------------------------------------
     Returns:
-        res.fun: optimized cost value
         cost_history_dict (dict): iterations and their cost value
     """
     estimator = Estimator()
@@ -119,8 +117,74 @@ def VQE_minimization_layer_training(ansatz, observable, num_layers: int, range_l
             next_param_layer = param_vector[:start]
             res = minimize(cost_func, next_param_layer, args=(ansatz, observable, param_vector, 0, start, estimator), method=minimizer)
             param_vector[:start] = res.x
-    return res.fun, cost_history_dict
+    return cost_history_dict
 
+
+
+
+
+
+
+def VQE_minimization_layer_adding_training(ansatz_function, observable: SparsePauliOp, num_qubits:int, num_layers: int, direction: str = "forward", initial_guess: str = "zero", minimizer: str = "COBYLA"):
+    """
+    Compute the VQE minimization algorithm using layer training.
+    -----------------------------------------
+    Args:
+        ansatz_function (method): ansatz to optimize.
+        observable (SparsePauliOp): The observable to be measured in its minimal form, it should use minQubits number of qubits.
+        num_qubits (int): number of qubits in the ansatz.
+        num_layers (int): number of layers in the ansatz.
+        direction (str): direction of layer training.
+        initial_guess (str or NumPy 1D array): "zero" initial guess with all parameters equal to cero, "rand" -> random initial guess. 1D Array -> the initial guess. default="zero".
+        minimizer (str): scipy.optimize.minimize possible optimization methods, default="COBYLA".
+    -----------------------------------------
+    Returns:
+        cost_history_dict (dict): iterations and their cost value
+    """
+    estimator = Estimator()
+    ansatz, num_params=ansatz_function(num_qubits,1)
+    cost_history_dict = {"iters": 0, "cost_history": []}    # Dictionary to save the evolution of the cost function
+
+    def cost_func(param_layer, ansatz, observable, param_vector, estimator):
+        full_param_vector=np.concatenate([param_vector, param_layer])
+
+        cost = cf.evaluate_observable(full_param_vector, ansatz, observable, estimator)
+        cost_history_dict["iters"] += 1
+        cost_history_dict["cost_history"].append(cost)
+        return cost
+    def cost_func_inv(param_layer, ansatz, observable, param_vector, estimator):
+        full_param_vector=np.concatenate([param_layer, param_vector])
+
+        cost = cf.evaluate_observable(full_param_vector, ansatz, observable, estimator)
+        cost_history_dict["iters"] += 1
+        cost_history_dict["cost_history"].append(cost)
+        return cost
+    
+    # Initial parameters
+    if initial_guess == "rand":
+        initial_param_vector = np.random.random(num_params)
+    elif initial_guess == "zero":
+        initial_param_vector = np.zeros(num_params)
+    elif isinstance(initial_guess, np.ndarray):
+        initial_param_vector = initial_guess
+    else:
+        print("Invalid initial guess, using all parameters as zero")
+    param_vector=initial_param_vector
+    param_layer=initial_param_vector
+
+    if direction == "forward":
+        for layer in range(1, num_layers+1):
+            ansatz, num_params=ansatz_function(num_qubits,layer)
+            res = minimize(cost_func, param_layer, args=(ansatz, observable, param_vector, estimator), method=minimizer)
+            param_vector=np.concatenate([param_vector, res.x])
+    elif direction == "backward":
+        for layer in range(1, num_layers+1):
+            ansatz, num_params=ansatz_function(num_qubits,layer)
+            res = minimize(cost_func_inv, param_layer, args=(ansatz, observable, param_vector, estimator), method=minimizer)
+            param_vector=np.concatenate([res.x, param_vector])
+    else:
+        raise ValueError("El parámetro 'direction' debe ser 'forward' o 'backward'.")
+    return cost_history_dict
 
 
 
