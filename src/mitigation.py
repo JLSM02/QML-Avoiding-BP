@@ -47,6 +47,10 @@ def VQE_minimization(ansatz, observable, initial_guess: str = "zero", minimizer:
     res = minimize(cost_func, initial_param_vector, args=(ansatz, observable, estimator), method=minimizer)
     return res.fun, cost_history_dict
 
+
+
+
+
 def VQE_minimization_layer_training(ansatz, observable, num_layers: int, range_layers: int, direction: str = "forward", initial_guess: str = "zero", minimizer: str = "COBYLA"):
     """
     Compute the VQE minimization algorithm using layer training.
