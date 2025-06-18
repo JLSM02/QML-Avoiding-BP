@@ -141,7 +141,7 @@ def evaluate_grad(params, ansatz, observable, estimator):
 # ====================================================================
 #            Function that calvulates the variances
 # ====================================================================
-def get_variances_data(num_params, ansatz, observable, estimator, index, num_shots=100, print_progress : bool = False):
+def get_variances_data(num_params, ansatz, observable, estimator, index, num_shots=100, print_progress : bool = False, use_shift_rule : bool = True, delta : float = 1e-5):
     """
     Get the variances of the expectation value of an observable and its derivative.
     -----------------------------------------
@@ -172,7 +172,7 @@ def get_variances_data(num_params, ansatz, observable, estimator, index, num_sho
         rand_param_vector = 2 * np.pi *np.random.random(num_params)
 
         value = evaluate_observable(rand_param_vector, ansatz, observable, estimator)
-        deriv = evaluate_deriv(rand_param_vector, ansatz, observable, index, estimator)
+        deriv = evaluate_deriv(rand_param_vector, ansatz, observable, index, estimator, use_shift_rule=use_shift_rule, delta=delta)
 
         value_list.append(value)
         deriv_list.append(deriv)
@@ -184,7 +184,7 @@ def get_variances_data(num_params, ansatz, observable, estimator, index, num_sho
 # ====================================================================
 #            VQE implementation for BP study
 # ====================================================================
-def VQE_minimization_BP(ansatz_function, minQubits: int, maxQubits: int, base_observable, index: list[int], initial_guess: str = "zero", minimizer: str = "COBYLA", print_info: bool = True, plot_info: bool = True):
+def VQE_minimization_BP(ansatz_function, minQubits: int, maxQubits: int, base_observable, index: list[int], initial_guess: str = "zero", minimizer: str = "COBYLA", print_info: bool = True, plot_info: bool = True, use_shift_rule : bool = True, delta : float = 1e-5):
     """
     Compute the VQE algorithm using different numbers of qubits, then plot the minimization progess and the derivatives information.
     -----------------------------------------
@@ -252,12 +252,12 @@ def VQE_minimization_BP(ansatz_function, minQubits: int, maxQubits: int, base_ob
 
             if index == "all":
                 for j in range(num_params):
-                    deriv = evaluate_deriv(params, ansatz, observable, j, estimator)
+                    deriv = evaluate_deriv(params, ansatz, observable, j, estimator, use_shift_rule=use_shift_rule, delta=delta)
                     cost_history_dict["deriv_history"][j].append(deriv)
             
             else:
                 for j in index:
-                    deriv = evaluate_deriv(params, ansatz, observable, j, estimator)
+                    deriv = evaluate_deriv(params, ansatz, observable, j, estimator, use_shift_rule=use_shift_rule, delta=delta)
                     cost_history_dict["deriv_history"][j].append(deriv)
 
             return cost
