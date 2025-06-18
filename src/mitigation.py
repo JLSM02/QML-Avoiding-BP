@@ -1,7 +1,7 @@
 # imports
 import numpy as np
 import matplotlib.pyplot as plt
-import customFunc as cf
+import src.customFunc as cf
 from scipy.optimize import minimize
 from qiskit.primitives import Estimator
 from deap import base, creator, tools
@@ -150,7 +150,8 @@ def VQE_minimization_AG(ansatz_function, minQubits: int, maxQubits: int, base_ob
         "minimum_values": [],
         "optimal_parameters": [],
         "n_evaluations" : [],
-        "n_generations" : []
+        "n_generations" : [],
+        "cost_history_dicts" : []
     }
 
     for i in range(minQubits, maxQubits+1):
@@ -265,6 +266,7 @@ def VQE_minimization_AG(ansatz_function, minQubits: int, maxQubits: int, base_ob
         data["optimal_parameters"].append(opt_parametes)
         data["n_evaluations"].append(n_evaluations)
         data["n_generations"].append(n_generations)
+        data["cost_history_dicts"].append(cost_history_dict)
 
         # Show the evolution of the cost function
         if plot_info:
