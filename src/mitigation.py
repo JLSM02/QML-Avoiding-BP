@@ -5,7 +5,7 @@ import src.customFunc as cf
 from scipy.optimize import minimize
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.primitives import Estimator
-#from deap import base, creator, tools
+from deap import base, creator, tools
 
 
 def VQE_minimization(ansatz, observable: SparsePauliOp, initial_guess: str = "zero", minimizer: str = "COBYLA"):
@@ -195,7 +195,7 @@ def VQE_minimization_layer_adding_training(ansatz_function, observable: SparsePa
 
 
 
-def VQE_minimization_AG(ansatz_circuit, observable : SparsePauliOp, stop_condition : float, population_size : int = 100, max_iters : int = 100, print_info: bool = True, plot_info: bool = True):
+def VQE_minimization_AG(ansatz_circuit, observable : SparsePauliOp, stop_condition : float, crossover_prob : float = 0.5, mutation_prob : float = 0.25, population_size : int = 100, max_iters : int = 100, print_info: bool = True, plot_info: bool = True):
     """
     Compute the VQE algorithm using different numbers of qubits, then plot the minimization progess and the derivatives information.
     -----------------------------------------
@@ -258,6 +258,7 @@ def VQE_minimization_AG(ansatz_circuit, observable : SparsePauliOp, stop_conditi
     toolbox.register("mutate", tools.mutFlipBit, indpb=0.05)
     toolbox.register("select", tools.selTournament, tournsize=3)
 
+    # From DEAP tutorial: long version
     def perform_AG():
         # Create population
         pop = toolbox.population(n=population_size)
@@ -271,7 +272,7 @@ def VQE_minimization_AG(ansatz_circuit, observable : SparsePauliOp, stop_conditi
         #       are crossed
         #
         # MUTPB is the probability for mutating an individual
-        CXPB, MUTPB = 0.5, 0.2
+        CXPB, MUTPB = crossover_prob, mutation_prob
 
         # Extracting all the fitnesses of 
         fits = [ind.fitness.values[0] for ind in pop]
