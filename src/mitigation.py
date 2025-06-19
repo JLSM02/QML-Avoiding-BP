@@ -5,7 +5,7 @@ import src.customFunc as cf
 from scipy.optimize import minimize
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.primitives import Estimator
-from deap import base, creator, tools
+#from deap import base, creator, tools
 
 
 def VQE_minimization(ansatz, observable: SparsePauliOp, initial_guess: str = "zero", minimizer: str = "COBYLA"):
@@ -141,25 +141,25 @@ def VQE_minimization_layer_adding_training(ansatz_function, observable: SparsePa
     Returns:
         cost_history_dict (dict): iterations and their cost value
     """
-    estimator = Estimator()
-    ansatz, num_params=ansatz_function(num_qubits,1)
-    cost_history_dict = {"iters": 0, "cost_history": []}    # Dictionary to save the evolution of the cost function
-
     def cost_func(param_layer, ansatz, observable, param_vector, estimator):
-        full_param_vector=np.concatenate([param_vector, param_layer])
+        full_param_vector=np.concatenate((param_vector, param_layer))
 
         cost = cf.evaluate_observable(full_param_vector, ansatz, observable, estimator)
         cost_history_dict["iters"] += 1
         cost_history_dict["cost_history"].append(cost)
         return cost
     def cost_func_inv(param_layer, ansatz, observable, param_vector, estimator):
-        full_param_vector=np.concatenate([param_layer, param_vector])
+        full_param_vector=np.concatenate((param_layer, param_vector))
 
         cost = cf.evaluate_observable(full_param_vector, ansatz, observable, estimator)
         cost_history_dict["iters"] += 1
         cost_history_dict["cost_history"].append(cost)
         return cost
     
+    estimator = Estimator()
+    ansatz, num_params=ansatz_function(num_qubits,1)
+    cost_history_dict = {"iters": 0, "cost_history": []}    # Dictionary to save the evolution of the cost function
+
     # Initial parameters
     if initial_guess == "rand":
         initial_param_vector = np.random.random(num_params)
@@ -169,21 +169,25 @@ def VQE_minimization_layer_adding_training(ansatz_function, observable: SparsePa
         initial_param_vector = initial_guess
     else:
         print("Invalid initial guess, using all parameters as zero")
-    param_vector=initial_param_vector
-    param_layer=initial_param_vector
 
-    if direction == "forward":
-        for layer in range(1, num_layers+1):
-            ansatz, num_params=ansatz_function(num_qubits,layer)
-            res = minimize(cost_func, param_layer, args=(ansatz, observable, param_vector, estimator), method=minimizer)
-            param_vector=np.concatenate([param_vector, res.x])
-    elif direction == "backward":
-        for layer in range(1, num_layers+1):
-            ansatz, num_params=ansatz_function(num_qubits,layer)
-            res = minimize(cost_func_inv, param_layer, args=(ansatz, observable, param_vector, estimator), method=minimizer)
-            param_vector=np.concatenate([res.x, param_vector])
-    else:
-        raise ValueError("El parámetro 'direction' debe ser 'forward' o 'backward'.")
+    res = minimize(cost_func, initial_param_vector, args=(ansatz, observable, np.array([]), estimator), method=minimizer)
+    param_vector=res.x
+
+    if num_layers>=2:
+        if direction == "forward":
+            for layer in range(2, num_layers+1):
+                ansatz, num_params=ansatz_function(num_qubits,layer)
+                param_layer=np.zeros(num_params-len(param_vector))
+                res = minimize(cost_func, param_layer, args=(ansatz, observable, param_vector, estimator), method=minimizer)
+                param_vector=np.concatenate((param_vector, res.x))
+        elif direction == "backward":
+            for layer in range(2, num_layers+1):
+                ansatz, num_params=ansatz_function(num_qubits,layer)
+                param_layer=np.zeros(num_params-len(param_vector))
+                res = minimize(cost_func_inv, param_layer, args=(ansatz, observable, param_vector, estimator), method=minimizer)
+                param_vector=np.concatenate((res.x, param_vector))
+        else:
+            raise ValueError("El parámetro 'direction' debe ser 'forward' o 'backward'.")
     return cost_history_dict
 
 
