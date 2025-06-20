@@ -5,7 +5,7 @@ import src.customFunc as cf
 from scipy.optimize import minimize
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.primitives import Estimator
-from deap import base, creator, tools
+#from deap import base, creator, tools
 
 
 def VQE_minimization(ansatz, observable: SparsePauliOp, initial_guess: str = "zero", minimizer: str = "COBYLA"):
