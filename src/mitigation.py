@@ -44,7 +44,7 @@ def VQE_minimization(ansatz, observable: SparsePauliOp, initial_guess: str = "ze
     cost_history_dict = {"iters": 0, "cost_history": []}
 
     # Optimization in layers
-    res = minimize(cost_func, initial_param_vector, args=(ansatz, observable, estimator), method=minimizer)
+    res = minimize(cost_func, initial_param_vector, args=(ansatz, observable, estimator), method=minimizer, options={'maxiter': 10000})
     return cost_history_dict
 
 
@@ -105,13 +105,13 @@ def VQE_minimization_layer_training(ansatz, observable: SparsePauliOp, num_layer
         start = layer * params_per_layer
         end = start + params_per_layer
         initial_param_layer = param_vector[start:end]
-        res = minimize(cost_func, initial_param_layer, args=(ansatz, observable, param_vector, start, end, estimator), method=minimizer)
+        res = minimize(cost_func, initial_param_layer, args=(ansatz, observable, param_vector, start, end, estimator), method=minimizer, options={'maxiter': 1000})
         param_vector[start:end]=res.x
 
     if range_layers != num_layers:
         if direction=="forward":
             next_param_layer=param_vector[end:]
-            res = minimize(cost_func, next_param_layer, args=(ansatz, observable, param_vector, end, len(param_vector), estimator), method=minimizer)
+            res = minimize(cost_func, next_param_layer, args=(ansatz, observable, param_vector, end, len(param_vector), estimator), method=minimizer, options={'maxiter': 10000-cost_history_dict["iters"]})
             param_vector[end:]=res.x
         elif direction == "backward":
             next_param_layer = param_vector[:start]
@@ -178,13 +178,13 @@ def VQE_minimization_layer_adding_training(ansatz_function, observable: SparsePa
             for layer in range(2, num_layers+1):
                 ansatz, num_params=ansatz_function(num_qubits,layer)
                 param_layer=np.zeros(num_params-len(param_vector))
-                res = minimize(cost_func, param_layer, args=(ansatz, observable, param_vector, estimator), method=minimizer)
+                res = minimize(cost_func, param_layer, args=(ansatz, observable, param_vector, estimator), method=minimizer, options={'maxiter': 1000})
                 param_vector=np.concatenate((param_vector, res.x))
         elif direction == "backward":
             for layer in range(2, num_layers+1):
                 ansatz, num_params=ansatz_function(num_qubits,layer)
                 param_layer=np.zeros(num_params-len(param_vector))
-                res = minimize(cost_func_inv, param_layer, args=(ansatz, observable, param_vector, estimator), method=minimizer)
+                res = minimize(cost_func_inv, param_layer, args=(ansatz, observable, param_vector, estimator), method=minimizer, options={'maxiter': 1000})
                 param_vector=np.concatenate((res.x, param_vector))
         else:
             raise ValueError("El parámetro 'direction' debe ser 'forward' o 'backward'.")
