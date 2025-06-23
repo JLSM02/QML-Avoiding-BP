@@ -219,7 +219,7 @@ def VQE_minimization_AG(ansatz_circuit, observable : SparsePauliOp, stop_conditi
         "optimal_parameters": None,
         "n_evaluations" : None,
         "n_generations" : None,
-        "cost_history_dict" : None
+        "cost_history" : None
     }
 
     estimator = Estimator()
@@ -233,9 +233,7 @@ def VQE_minimization_AG(ansatz_circuit, observable : SparsePauliOp, stop_conditi
         print(f"Se usarán {num_params} parámetros")
     
     # Dictionary to save the evolution of the cost function
-    cost_history_dict = {
-        "cost_history": []
-    }
+    cost_history = []
 
     creator.create("FitnessMax", base.Fitness, weights=(1.0,))
     creator.create("Individual", list, fitness=creator.FitnessMax)
@@ -316,7 +314,7 @@ def VQE_minimization_AG(ansatz_circuit, observable : SparsePauliOp, stop_conditi
             # Gather all the fitnesses in one list and print the stats
             fits = [ind.fitness.values[0] for ind in pop]
 
-            cost_history_dict["cost_history"].append(-max(fits))
+            cost_history.append(-max(fits))
 
         best_fit = max(fits)
         best_params = pop[fits.index(max(fits))]
@@ -331,12 +329,12 @@ def VQE_minimization_AG(ansatz_circuit, observable : SparsePauliOp, stop_conditi
     data["optimal_parameters"] = opt_parametes
     data["n_evaluations"] = n_evaluations
     data["n_generations"] = n_generations
-    data["cost_history_dict"] = cost_history_dict
+    data["cost_history"] = cost_history
 
     # Show the evolution of the cost function
     if plot_info:
         fig, ax = plt.subplots()
-        ax.plot(range(1, n_generations+1), cost_history_dict["cost_history"], label=r"$\langle O\rangle$")
+        ax.plot(range(1, n_generations+1), cost_history, label=r"$\langle O\rangle$")
 
         ax.set_xlabel("Generaciones")
         ax.set_ylabel(r"$\langle O\rangle$")
