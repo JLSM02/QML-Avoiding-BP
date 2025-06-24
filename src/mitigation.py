@@ -5,7 +5,7 @@ import src.customFunc as cf
 from scipy.optimize import minimize
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.primitives import Estimator
-from deap import base, creator, tools
+#from deap import base, creator, tools
 
 
 def VQE_minimization(ansatz, observable: SparsePauliOp, initial_guess: str = "zero", minimizer: str = "COBYLA"):
@@ -98,7 +98,7 @@ def VQE_minimization_layer_training(ansatz, observable: SparsePauliOp, num_layer
     if direction == "forward":
         layer_indices = range(range_layers)
     elif direction == "backward":
-        layer_indices = reversed(range(range_layers))
+        layer_indices = reversed(range(num_layers - range_layers, num_layers))
     else:
         raise ValueError("El parámetro 'direction' debe ser 'forward' o 'backward'.")
     for layer in layer_indices:
@@ -115,7 +115,7 @@ def VQE_minimization_layer_training(ansatz, observable: SparsePauliOp, num_layer
             param_vector[end:]=res.x
         elif direction == "backward":
             next_param_layer = param_vector[:start]
-            res = minimize(cost_func, next_param_layer, args=(ansatz, observable, param_vector, 0, start, estimator), method=minimizer)
+            res = minimize(cost_func, next_param_layer, args=(ansatz, observable, param_vector, 0, start, estimator), method=minimizer, options={'maxiter': 10000-cost_history_dict["iters"]})
             param_vector[:start] = res.x
     return cost_history_dict
 
