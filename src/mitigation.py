@@ -149,7 +149,7 @@ def VQE_minimization_layer_adding_training(ansatz_function, observable: SparsePa
         cost_history_dict["cost_history"].append(cost)
         return cost
     def cost_func_inv(param_layer, ansatz, observable, param_vector, estimator):
-        full_param_vector=np.concatenate((param_layer, param_vector))
+        full_param_vector=np.concatenate((param_vector[:num_params_1],param_layer, param_vector[num_params_1:]))
 
         cost = cf.evaluate_observable(full_param_vector, ansatz, observable, estimator)
         cost_history_dict["iters"] += 1
@@ -157,14 +157,14 @@ def VQE_minimization_layer_adding_training(ansatz_function, observable: SparsePa
         return cost
     
     estimator = Estimator()
-    ansatz, num_params=ansatz_function(num_qubits,1)
+    ansatz, num_params_1=ansatz_function(num_qubits,1)
     cost_history_dict = {"iters": 0, "cost_history": []}    # Dictionary to save the evolution of the cost function
 
     # Initial parameters
     if initial_guess == "rand":
-        initial_param_vector = np.random.random(num_params)
+        initial_param_vector = np.random.random(num_params_1)
     elif initial_guess == "zero":
-        initial_param_vector = np.zeros(num_params)
+        initial_param_vector = np.zeros(num_params_1)
     elif isinstance(initial_guess, np.ndarray):
         initial_param_vector = initial_guess
     else:
@@ -185,7 +185,7 @@ def VQE_minimization_layer_adding_training(ansatz_function, observable: SparsePa
                 ansatz, num_params=ansatz_function(num_qubits,layer)
                 param_layer=np.zeros(num_params-len(param_vector))
                 res = minimize(cost_func_inv, param_layer, args=(ansatz, observable, param_vector, estimator), method=minimizer, options={'maxiter': 1000})
-                param_vector=np.concatenate((res.x, param_vector))
+                param_vector=np.concatenate((param_vector[:num_params_1], res.x, param_vector[num_params_1:]))
         else:
             raise ValueError("El parámetro 'direction' debe ser 'forward' o 'backward'.")
     return cost_history_dict
