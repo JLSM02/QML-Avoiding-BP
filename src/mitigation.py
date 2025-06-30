@@ -256,7 +256,7 @@ def VQE_minimization_AG(ansatz_circuit, observable : SparsePauliOp, stop_conditi
 
     toolbox.register("evaluate", evalOneMax)
     toolbox.register("mate", tools.cxTwoPoint)
-    toolbox.register("mutate", tools.mutFlipBit, indpb=0.05)
+    toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=0.1, indpb=0.2)
     toolbox.register("select", tools.selTournament, tournsize=3)
 
     # From DEAP tutorial: long version
