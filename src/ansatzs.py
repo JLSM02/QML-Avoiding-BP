@@ -5,8 +5,8 @@ from qiskit import QuantumCircuit
 from qiskit.transpiler import PassManager
 from qiskit.transpiler.passes import (HighLevelSynthesis, InverseCancellation)
 from qiskit.transpiler.passes.routing.commuting_2q_gate_routing import (SwapStrategy, FindCommutingPauliEvolutions, Commuting2qGateRouter)
-from qiskit.circuit.library import CXGate, RZGate, RXGate, SXGate, XGate, HGate, UGate
-
+from qiskit.circuit.library import CXGate, RZGate, RXGate, XGate, HGate, SXGate, SXdgGate, UGate
+from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
 
 
 # ====================================================================
@@ -119,36 +119,27 @@ def build_twoLocal_ansatz(num_qubits: int, layers: int = 1) -> tuple[QuantumCirc
 
 
 def build_Surf_ansatz(num_qubits: int, layers: int = 1) -> tuple[QuantumCircuit, int]:
-
     
+    theta1 = Parameter("θ1")
+    theta2 = Parameter("θ2")
+    n = 6  # número de qubits
+
     qc = QuantumCircuit(num_qubits)
 
-    # Parameters list
-    thetas = [[Parameter(f'θ_{0}'), Parameter(f'θ_{1}')]]
+    for _l in range(layers):
+        # Bloque de RY
+        for i in range(num_qubits):
+            qc.ry(theta1, i)
 
-    # Add random gates
-    def rand_gate(theta, qubit):
-        r = np.random.random()
-
-        if r < 1/3:
-            qc.rx(theta, qubit)
-        elif r < 2/3:
-            qc.ry(theta, qubit)
-        else:
-            qc.rz(theta, qubit)
-
-    for l in range(layers):
-        
+        # Cadena de CNOTs
         for i in range(num_qubits - 1):
+            qc.cx(i, i + 1)
 
-            rand_gate(thetas[0][0], i)
-            rand_gate(thetas[0][1], i+1)
-            qc.cz(i, i + 1)
-
-        qc.barrier()
+        # Bloque de RZ
+        for i in range(num_qubits):
+            qc.rz(theta2, i)
         
     return qc, 2
-
 
 
 
@@ -159,10 +150,39 @@ def optimize_ansatz(ansatz_naive):
     edge_coloring = {(idx, idx + 1): (idx + 1) % 2 for idx in range(num_qubits)}
 
     # Define pass manager
-    init_cost_layer = PassManager([FindCommutingPauliEvolutions(), Commuting2qGateRouter(swap_strategy, edge_coloring,), HighLevelSynthesis(basis_gates=["x", "u", "h", "cx", "sx", "rz", "rx"]), InverseCancellation(gates_to_cancel=[CXGate(), XGate(), HGate()])])
+    init_cost_layer = PassManager([FindCommutingPauliEvolutions(), Commuting2qGateRouter(swap_strategy, edge_coloring,), HighLevelSynthesis(basis_gates=["x", "u", "h", "cx", "sx", "rz", "rx"]), InverseCancellation(gates_to_cancel=[CXGate(), XGate(), HGate(), (RZGate(np.pi), RZGate(-np.pi)), (RZGate(np.pi/2), RZGate(-np.pi/2)), (SXGate(),SXdgGate())])])
 
     # Create a circuit for the 2 qubit gates and optimize it with the cost layer pass manager
     ansatz_opt=init_cost_layer.run(ansatz_naive)
 
     return ansatz_opt
+
+
+
+def get_cx_count(ansatz, backend):
+    pm = generate_preset_pass_manager(backend=backend, optimization_level=3)
+    transpiled = pm.run(ansatz)
+    ops = transpiled.count_ops()
+    return transpiled, ops.get('cx', 0)
+
+
+
+def iterate_ansatz_opt(ansatz_naive, backend):
+    # Inicialization
+    ansatz_opt = optimize_ansatz(ansatz_naive)
+    transpiled_ansatz_opt, num_cx_prev = get_cx_count(ansatz_opt, backend)
+
+    # Optimization loop
+    while True:
+        ansatz_opt_prev=ansatz_opt
+        transpiled_ansatz_opt_prev=transpiled_ansatz_opt
+        ansatz_opt = optimize_ansatz(ansatz_opt)
+        transpiled_ansatz_opt, num_cx = get_cx_count(ansatz_opt, backend)
+    
+        if num_cx < num_cx_prev:
+            num_cx_prev = num_cx
+        else:
+            break
+    return ansatz_opt_prev, transpiled_ansatz_opt_prev, num_cx_prev
+
 
