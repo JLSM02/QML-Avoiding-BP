@@ -8,12 +8,12 @@ from qiskit.primitives import Estimator
 from deap import base, creator, tools
 
 
-def VQE_minimization(ansatz, observable: SparsePauliOp, initial_guess: str = "zero", minimizer: str = "COBYLA"):
+def VQE_minimization(ansatz_circuit, observable: SparsePauliOp, initial_guess: str = "zero", minimizer: str = "COBYLA", tol=None):
     """
     Compute the VQE minimization algorithm.
     -----------------------------------------
     Args:
-        ansatz (method):  ansatz to optimize.
+        ansatz_circuit (method):  ansatz to optimize.
         observable (SparsePauliOp): The observable to be measured in its minimal form, it should use minQubits number of qubits.
         initial_guess (str or NumPy 1D array): "zero" initial guess with all parameters equal to cero, "rand" -> random initial guess. 1D Array -> the initial guess. default="zero".
         minimizer (str): scipy.optimize.minimize possible optimization methods, default="COBYLA".
@@ -22,7 +22,7 @@ def VQE_minimization(ansatz, observable: SparsePauliOp, initial_guess: str = "ze
         cost_history_dict (dict): iterations and their cost value
     """
     estimator = Estimator()
-    num_params=ansatz.num_parameters
+    num_params=ansatz_circuit.num_parameters
 
     # Initial parameters
     if initial_guess == "rand":
@@ -37,8 +37,8 @@ def VQE_minimization(ansatz, observable: SparsePauliOp, initial_guess: str = "ze
         print("Invalid initial guess, using all parameters as zero")
         initial_param_vector = np.zeros(num_params)
   
-    def cost_func(param_vector, ansatz, observable, estimator):
-        cost = cf.evaluate_observable(param_vector, ansatz, observable, estimator)
+    def cost_func(param_vector, ansatz_circuit, observable, estimator):
+        cost = cf.evaluate_observable(param_vector, ansatz_circuit, observable, estimator)
         cost_history_dict["iters"] += 1
         cost_history_dict["cost_history"].append(cost)
         return cost
@@ -47,7 +47,7 @@ def VQE_minimization(ansatz, observable: SparsePauliOp, initial_guess: str = "ze
     cost_history_dict = {"iters": 0, "cost_history": []}
 
     # Optimization in layers
-    res = minimize(cost_func, initial_param_vector, args=(ansatz, observable, estimator), method=minimizer, options={'maxiter': 10000})
+    res = minimize(cost_func, initial_param_vector, args=(ansatz_circuit, observable, estimator), method=minimizer, options={'maxiter': 10000}, tol=tol)
     return cost_history_dict
 
 
@@ -198,7 +198,7 @@ def VQE_minimization_layer_adding_training(ansatz_function, observable: SparsePa
 
 
 
-def VQE_minimization_AG(ansatz_circuit, observable : SparsePauliOp, stop_condition : float, crossover_prob : float = 0.5, mutation_prob : float = 0.25, population_size : int = 100, max_iters : int = 100, print_info: bool = True, plot_info: bool = True):
+def VQE_minimization_AG(ansatz_circuit, observable : SparsePauliOp, tolerance : float, crossover_prob : float = 0.5, mutation_prob : float = 0.25, population_size : int = 100, max_gen : int = 100, print_info: bool = True, plot_info: bool = True):
     """
     Compute the VQE algorithm using different numbers of qubits, then plot the minimization progess and the derivatives information.
     -----------------------------------------
@@ -282,8 +282,12 @@ def VQE_minimization_AG(ansatz_circuit, observable : SparsePauliOp, stop_conditi
         # Variable keeping track of the number of generations
         g = 0
 
+        # Stop conditions vars
+        avg_score = np.mean(fits)
+        avg_score_prev = avg_score - tolerance -1
+
         # Begin the evolution
-        while max(fits) < -stop_condition and g < max_iters:
+        while abs(avg_score-avg_score_prev) > tolerance and g < max_gen:
             # A new generation
             g = g + 1
         
@@ -319,6 +323,9 @@ def VQE_minimization_AG(ansatz_circuit, observable : SparsePauliOp, stop_conditi
 
             cost_history.append(-max(fits))
 
+            avg_score_prev = avg_score
+            avg_score = np.mean(fits)
+
         best_fit = max(fits)
         best_params = pop[fits.index(max(fits))]
 
@@ -352,3 +359,42 @@ def VQE_minimization_AG(ansatz_circuit, observable : SparsePauliOp, stop_conditi
         print("=====================================================")
 
     return data
+
+
+def VQE_minimization_AG_plus(ansatz_circuit, observable : SparsePauliOp, stop_condition : float, crossover_prob : float = 0.5, mutation_prob : float = 0.25, population_size : int = 100, max_gen : int = 100, minimizer: str = "COBYLA", print_info: bool = True, plot_info: bool = True):
+
+    converg = False
+    total_AG_evaluations = 0
+    while not converg:
+
+        AG_result = VQE_minimization_AG(ansatz_circuit, observable, stop_condition, crossover_prob, mutation_prob, population_size, max_gen, print_info=False, plot_info=False)
+        total_AG_evaluations += AG_result['n_evaluations']
+
+        # Si el AG converge
+        if AG_result["n_generations"] < max_gen:
+            converg = True
+        
+    COBYLA_result = VQE_minimization(ansatz_circuit, observable, initial_guess=AG_result["optimal_parameters"], minimizer=minimizer)
+
+        # Show the evolution of the cost function
+    if plot_info:
+        fig, ax = plt.subplots()
+        ax.plot(range(1, AG_result["n_generations"]+1), AG_result["cost_history"], label="AG")
+        ax.plot(range(AG_result["n_generations"]+1, AG_result["n_generations"]+COBYLA_result["iters"]+1), COBYLA_result["cost_history"], label=minimizer)
+
+        ax.set_xlabel("Generaciones/iteraciones")
+        ax.set_ylabel(r"$\langle O\rangle$")
+        ax.set_title(f"Minimización")
+        plt.legend()
+        plt.show()
+
+    if print_info:
+        print(f"Fin ejecución. Mínimo encontrado: {COBYLA_result['cost_history'][-1]}")
+        print(f"Número de generaciones usadas en AG: {AG_result['n_generations']}")
+        print(f"Número total de evaluaciones de la función de coste: {total_AG_evaluations + COBYLA_result['iters']}")
+        print(f"Evaluaciones AG: {total_AG_evaluations}")
+        print(f"Evaluaciones {minimizer}: {COBYLA_result['iters']}")
+        print("=====================================================")
+
+
+        return {"AG_result" : AG_result, "minimizer_result" : COBYLA_result}
