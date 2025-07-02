@@ -5,7 +5,7 @@ import src.customFunc as cf
 from scipy.optimize import minimize
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.primitives import Estimator
-#from deap import base, creator, tools
+from deap import base, creator, tools
 
 
 def VQE_minimization(ansatz, observable: SparsePauliOp, initial_guess: str = "zero", minimizer: str = "COBYLA"):
@@ -29,10 +29,13 @@ def VQE_minimization(ansatz, observable: SparsePauliOp, initial_guess: str = "ze
         initial_param_vector = np.random.random(num_params)
     elif initial_guess == "zero":
         initial_param_vector = np.zeros(num_params)
-    elif initial_guess is np.ndarray():
+    elif isinstance(initial_guess, np.ndarray):
+        initial_param_vector = initial_guess
+    elif isinstance(initial_guess, list):
         initial_param_vector = initial_guess
     else:
         print("Invalid initial guess, using all parameters as zero")
+        initial_param_vector = np.zeros(num_params)
   
     def cost_func(param_vector, ansatz, observable, estimator):
         cost = cf.evaluate_observable(param_vector, ansatz, observable, estimator)
@@ -253,7 +256,7 @@ def VQE_minimization_AG(ansatz_circuit, observable : SparsePauliOp, stop_conditi
 
     toolbox.register("evaluate", evalOneMax)
     toolbox.register("mate", tools.cxTwoPoint)
-    toolbox.register("mutate", tools.mutFlipBit, indpb=0.05)
+    toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=0.1, indpb=0.2)
     toolbox.register("select", tools.selTournament, tournsize=3)
 
     # From DEAP tutorial: long version
