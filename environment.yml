@@ -1,4 +1,4 @@
-name: qml_avoiding_bp
+name: avoiding_bp
 channels:
   - conda-forge
   - defaults
@@ -12,6 +12,6 @@ dependencies:
   - deap==1.4.3
   - progress
   - ipykernel
-  - pip
+  - pip==25.1
   - pip:
       - qiskit-nature==0.7.1
