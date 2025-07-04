@@ -6,7 +6,7 @@ from qiskit.quantum_info import SparsePauliOp
 from qiskit.primitives import Estimator
 from scipy.optimize import minimize
 
-
+import itertools
 
 
 # ====================================================================
@@ -35,6 +35,30 @@ def expand_observable(op: SparsePauliOp, total_qubits: int):
     return SparsePauliOp.from_list(expanded_paulis)
 
 
+
+# ====================================================================
+#            Function to make a global observable
+# ====================================================================
+def global_observable(n):
+    coeffs = []
+    paulis = []
+
+    # Hay 2^n términos en el producto expandido de (I + Z0)(I + Z1)...(I + Zn-1)
+    for bits in itertools.product([0, 1], repeat=n):
+        # Cada término tiene coeficiente 1/2^n
+        sign = 1
+        label = list('I' * n)
+        for i, b in enumerate(bits):
+            if b == 1:
+                label[i] = 'Z'
+        paulis.append(''.join(label))
+        coeffs.append(-1 / (2**n))  # Todos los términos vienen con signo negativo
+
+    # El término I tiene coef 1, pero se le suma -1/2^n del desarrollo anterior
+    idx_I = paulis.index('I'*n)
+    coeffs[idx_I] += 1
+
+    return SparsePauliOp.from_list(list(zip(paulis, coeffs)))
 
 
 # ====================================================================
@@ -139,7 +163,7 @@ def evaluate_grad(params, ansatz, observable, estimator):
 
 
 # ====================================================================
-#            Function that calvulates the variances
+#            Function that calculates the variances
 # ====================================================================
 def get_variances_data(num_params, ansatz, observable, estimator, index, num_shots=100, print_progress : bool = False, use_shift_rule : bool = True, delta : float = 1e-5):
     """

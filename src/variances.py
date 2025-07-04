@@ -63,7 +63,12 @@ def variance_vs_nQubits(ansantz_function, minQubits: int, maxQubits: int, base_o
 
         if not (only_even_qubits and i%2!=0):
             
-            current_observable = cf.expand_observable(base_observable, i)
+            if base_observable == "global_observable":
+                current_observable = cf.global_observable(i)
+
+            else:
+                current_observable = cf.expand_observable(base_observable, i)
+            
             ansatz_circuit, num_params = ansantz_function(i)
 
             if print_info:
