@@ -1,4 +1,4 @@
-from qiskit.circuit import QuantumCircuit, Parameter
+from qiskit.circuit import QuantumCircuit, Parameter, ParameterVector
 from qiskit.circuit.library import NLocal, TwoLocal, CCXGate, CRZGate, RXGate
 import numpy as np
 from qiskit import QuantumCircuit
@@ -7,6 +7,9 @@ from qiskit.transpiler.passes import (HighLevelSynthesis, InverseCancellation)
 from qiskit.transpiler.passes.routing.commuting_2q_gate_routing import (SwapStrategy, FindCommutingPauliEvolutions, Commuting2qGateRouter)
 from qiskit.circuit.library import CXGate, RZGate, RXGate, XGate, HGate, SXGate, SXdgGate, UGate
 from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
+from qiskit_nature.second_q.mappers import JordanWignerMapper
+from qiskit_nature.second_q.operators import FermionicOp
+from qiskit_nature.second_q.circuit.library import HartreeFock, UCCSD
 
 
 # ====================================================================
@@ -91,7 +94,9 @@ def build_Nlocal_ansatz(num_qubits, layers = 2) -> tuple[QuantumCircuit, int]:
 
 
 
-
+# ====================================================================
+#                 Function to 2 local ansatz
+# ====================================================================
 
 def build_twoLocal_ansatz(num_qubits: int, layers: int = 1) -> tuple[QuantumCircuit, int]:
     """
@@ -113,6 +118,91 @@ def build_twoLocal_ansatz(num_qubits: int, layers: int = 1) -> tuple[QuantumCirc
                       insert_barriers=True)
     
     return ansatz, ansatz.num_parameters
+
+
+
+# ====================================================================
+#                 Function to UCCSD ansatz
+# ====================================================================
+
+def build_UCCSD_ansatz(num_qubits, mapper=JordanWignerMapper()):
+
+    num_spatial_orbitals = num_qubits // 2
+    n_alpha = n_beta = 1
+    num_particles = (n_alpha, n_beta)
+
+    hf_initial_state = HartreeFock(
+        num_spatial_orbitals=num_spatial_orbitals,
+        num_particles=num_particles,
+        qubit_mapper=mapper
+    )
+
+    ansatz = UCCSD(
+        num_spatial_orbitals=num_spatial_orbitals,
+        num_particles=num_particles,
+        qubit_mapper=mapper,
+        initial_state=hf_initial_state
+    )
+
+    return ansatz, ansatz.num_parameters
+
+
+
+
+# ====================================================================
+#                 Function to k-UCCSD ansatz
+# ====================================================================
+
+def build_k_UCCSD_ansatz(num_qubits, k=6, mapper=JordanWignerMapper()):
+
+    num_spatial_orbitals = num_qubits // 2
+    n_alpha = n_beta = 1
+    num_particles = (n_alpha, n_beta)
+
+    # Estado inicial Hartree-Fock
+    hf = HartreeFock(
+        num_spatial_orbitals=num_spatial_orbitals,
+        num_particles=num_particles,
+        qubit_mapper=mapper
+    )
+
+    # Creamos un UCCSD para extraer el número de parámetros
+    uccsd_template = UCCSD(
+        num_spatial_orbitals=num_spatial_orbitals,
+        num_particles=num_particles,
+        qubit_mapper=mapper,
+        initial_state=None
+    )
+    
+    # Forzamos construcción del circuito
+    _ = uccsd_template.decompose()  # <--- esto construye internamente los operadores y parámetros
+
+    # Obtenemos el número de parámetros
+    num_params = len(uccsd_template.parameters)
+
+    # Inicializamos circuito completo
+    full_ansatz = QuantumCircuit(num_qubits)
+    full_ansatz.compose(hf, inplace=True)
+
+    all_parameters = []
+
+    # Añadimos k capas de UCCSD
+    for i in range(k):
+        theta = ParameterVector(f'theta_{i}', num_params)
+        all_parameters.extend(theta)
+
+        ucc_i = UCCSD(
+            num_spatial_orbitals=num_spatial_orbitals,
+            num_particles=num_particles,
+            qubit_mapper=mapper,
+            initial_state=None
+        )
+        _ = ucc_i.decompose()  # <- de nuevo, forzamos construcción para tener acceso a parameters
+        ucc_i = ucc_i.assign_parameters(dict(zip(ucc_i.parameters, theta)))
+
+        full_ansatz.compose(ucc_i, inplace=True)
+
+    return full_ansatz, full_ansatz.num_parameters
 
 
 

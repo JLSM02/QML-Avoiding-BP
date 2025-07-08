@@ -2,6 +2,8 @@
 import time
 import numpy as np
 from qiskit.quantum_info import SparsePauliOp
+import sys
+sys.path.append('../../../')
 from src import customFunc as cf
 from src import ansatzs as anz
 from src import mitigation as mit
