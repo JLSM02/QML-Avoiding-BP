@@ -5,6 +5,7 @@ import src.customFunc as cf
 from scipy.optimize import minimize
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.primitives import Estimator
+from scipy.stats import linregress
 from deap import base, creator, tools
 
 
@@ -398,3 +399,244 @@ def VQE_minimization_AG_plus(ansatz_circuit, observable : SparsePauliOp, stop_co
 
 
         return {"AG_result" : AG_result, "minimizer_result" : COBYLA_result}
+    
+# ====================================================================
+#             Function that calculates a expectation value
+# ====================================================================
+def evaluate_observable(params, ansatz, observable, estimator):
+    """
+    Calculates the expected value of an observable, using Qiskit.
+    -----------------------------------------
+    Args:
+        params (Numpy 1D array): The list of parameters to be used in the calculation.
+        ansatz (QuantumCircuit): The Qiskit circuit containing the ansatz, the parametrized quantum circuit.
+        observable (SparsePauliOp): The observable to be measured.
+        estimator (Estimator): Qiskit estimator to use in the calculations.
+    -----------------------------------------
+    Returns:
+        (float): Expectation value of the observable.
+    """
+    job = estimator.run([ansatz], [observable], [params])
+    result = job.result()
+    expected_value = result.values[0]
+    
+    return expected_value
+
+
+
+
+# ====================================================================
+#         Function to get the derivative of an expectation value
+# ====================================================================
+def evaluate_deriv(params, ansatz, observable, index, estimator, use_shift_rule : bool = True, delta : float = 1e-5):
+    """
+    Computes the partial derivative of an observable with respect to the given parameter.
+    -----------------------------------------
+    Args:
+        params (Numpy 1D array): The list of parameters to be used in the calculation.
+        ansatz (QuantumCircuit): The Qiskit circuit containing the ansatz, the parametrized quantum circuit.
+        observable (SparsePauliOp): The observable to be measured.
+        index (int): With respect to which parameter the derivative will be taken.
+        estimator (Estimator): Qiskit estimator to use in the calculations.
+    -----------------------------------------
+    Returns:
+        (float): Expectation value of the derivative of the observable.
+    """
+    
+    if use_shift_rule:
+        # Shifts for parameter-shift
+        shifted_plus = params.copy()
+        shifted_plus[index] += np.pi / 2
+
+        shifted_minus = params.copy()
+        shifted_minus[index] -= np.pi / 2
+
+        value_plus = evaluate_observable(shifted_plus, ansatz, observable, estimator)
+        value_minus = evaluate_observable(shifted_minus, ansatz, observable, estimator)
+
+
+        deriv = 0.5 * (value_plus - value_minus)
+    
+    else:
+        # Forward and backward derivative
+        shifted_plus = params.copy()
+        shifted_plus[index] += delta
+
+        shifted_minus = params.copy()
+        shifted_minus[index] -= delta
+
+        value_plus = evaluate_observable(shifted_plus, ansatz, observable, estimator)
+        value_minus = evaluate_observable(shifted_minus, ansatz, observable, estimator)
+
+
+        deriv = (value_plus - value_minus)/delta
+    
+    return deriv
+
+
+
+# ====================================================================
+#            Function that calculates the variances
+# ====================================================================
+def get_variances_data(num_params, layer_params, ansatz, observable, index, estimator=Estimator(), num_shots=100, print_progress : bool = False, use_shift_rule : bool = True, delta : float = 1e-5):
+    """
+    Get the variances of the expectation value of an observable and its derivative.
+    -----------------------------------------
+    Args:
+        num_params (int): The number of parameters to be used in the calculation.
+        ansatz (QuantumCircuit): The Qiskit circuit containing the ansatz, the parametrized quantum circuit.
+        observable (SparsePauliOp): The observable to be measured.
+        index (int): With respect to which parameter the derivative will be taken.
+        num_shots (int): Number of samples taken to compute the variances.
+        print_progress (bool): If the completation percentage of the current variances will be printed, useful for heavy calculations.
+    -----------------------------------------
+    Returns:
+        (float): Variance of the expectation value of the observable.
+        (float): Variance of the expectation value of the derivative.
+    """
+
+    # List to save the expected values
+    value_list = []
+
+    # List to save the partial derivatives with respect to theta_index
+    deriv_list = []
+
+    param_vector=np.zeros(num_params)
+
+    for _ in range(num_shots):
+
+        if print_progress and (_ + 1) % (num_shots // 10) == 0:
+            print(int((_ + 1) / num_shots * 100), r"\% completado.")
+
+        param_vector[:layer_params] = 2 * np.pi *np.random.random(layer_params)
+
+        value = evaluate_observable(param_vector, ansatz, observable, estimator)
+        deriv = evaluate_deriv(param_vector, ansatz, observable, index, estimator, use_shift_rule=use_shift_rule, delta=delta)
+
+        value_list.append(value)
+        deriv_list.append(deriv)
+
+    return np.var(value_list), np.var(deriv_list)
+
+
+
+def variance_vs_nQubits(ansantz_function, layers, layer_train: bool, minQubits: int, maxQubits: int, base_observable : SparsePauliOp, index: int, num_shots : int = 100, print_info: bool=True, plot_info: bool=True, do_regress : bool=False, only_even_qubits : bool=False, print_progress : bool=False, use_shift_rule : bool = True, delta : float = 1e-5):
+    """
+    Obtain the variances of the expectation value and the given derivative using different numbers of qubits.
+    -----------------------------------------
+    Args:
+        ansatz_function (function): A function defined as follows: ansatz_function(N_qubits (int)) -> qc (QuantumCircuit), num_params (int)
+        minQubits (int): The smallest number of qubits used.
+        maxQubits (int): The greatest number of qubits used.
+        base_observable (SparsePauliOp): The observable to be measured in its minimal form, it should use minQubits number of qubits.
+        index (int): With respect to which parameter the derivative will be taken.
+        num_shots (int): Number of samples taken to compute the variances.
+        print_info (bool): If the results will be printed.
+        plot_info (bool): If the results will be plotted.
+        do_regress (bool): If a linear regression will be performed.
+        only_even_qubits (bool): To use only a even number of qubits, usefull for UCCSD.
+        print_progress (bool): If the completation percentage of the current variances will be printed, useful for heavy calculations.
+    -----------------------------------------
+    Returns:
+        (Dictionary): 
+            "n_qubits" : (list[int])
+            "var_value" : (list[float])
+            "var_deriv" : (list[float])
+            "value_slope" : (int)
+            "value_ord" : (int)
+            "value_rsquare" : (int)
+            "deriv_slope" : (int)
+            "deriv_ord" : (int)
+            "deriv_rsquare" : (int)
+    """
+    
+    data = {
+        "n_qubits": [],
+        "var_value": [],
+        "var_deriv": [],
+        "value_slope": 0,
+        "value_ord": 0,
+        "value_rsquare": 0,
+        "deriv_slope": 0,
+        "deriv_ord": 0,
+        "deriv_rsquare": 0
+    }
+
+    estimator = Estimator()
+
+    for i in range(minQubits, maxQubits+1):
+
+        if not (only_even_qubits and i%2!=0):
+            
+            if base_observable == "global_observable":
+                current_observable = cf.global_observable(i)
+
+            else:
+                current_observable = cf.expand_observable(base_observable, i)
+            
+            if layer_train==True:
+                ansatz_circuit, layer_params = ansantz_function(i, 1)
+                ansatz_circuit, num_params = ansantz_function(i, layers)
+            else:
+                ansatz_circuit, num_params = ansantz_function(i, layers)
+                layer_params=num_params
+
+            if print_info:
+                print("\n=====================================================")
+                print(f"Calculando varianzas con {i} qubits.\n")
+            
+            var_value, var_deriv = get_variances_data(num_params, layer_params, ansatz_circuit, current_observable, index, estimator, num_shots, print_progress=print_progress, use_shift_rule=use_shift_rule, delta=delta)
+
+            # Current iteration information
+            if print_info:
+                print(f"Varianza del valor esperado: {var_value}")
+                print(f"Varianza de la derivada: {var_deriv}")
+
+            data["n_qubits"].append(i)
+            data["var_value"].append(var_value)
+            data["var_deriv"].append(var_deriv)
+
+    # Regression
+    if do_regress:
+        value_regress = linregress(data["n_qubits"], np.log(data["var_value"]))
+        deriv_regress = linregress(data["n_qubits"], np.log(data["var_deriv"]))
+
+        data["value_slope"] = value_regress[0]
+        data["value_ord"] = value_regress[1]
+        data["value_rsquare"] = value_regress[2]**2
+
+        data["deriv_slope"] = deriv_regress[0]
+        data["deriv_ord"] = deriv_regress[1]
+        data["deriv_rsquare"] = deriv_regress[2]**2
+
+        if print_info:
+            print("\n=====================================================")
+            print(f"Pendiente para valor esperado: {data['value_slope']}.")
+            print(f"R^2 para valor esperado: {data['value_rsquare']}.")
+
+            print("\n=====================================================")
+            print(f"Pendiente para derivada: {data['deriv_slope']}.")
+            print(f"R^2 para derivada: {data['deriv_rsquare']}.")
+    
+    # Shows result's concentration and its derivative
+    if plot_info:
+        fig, ax = plt.subplots()
+        
+        # Scatter
+        ax.scatter(data["n_qubits"], data["var_value"], label=r"Var($\langle O\rangle$)")
+        ax.scatter(data["n_qubits"], data["var_deriv"], label=rf"Var($\partial_{index}\langle O\rangle$)")
+
+        # Tendencies
+        if do_regress:
+            base = np.linspace(minQubits, maxQubits, 100)
+            ax.plot(base, np.exp(data["value_slope"]*base+data["value_ord"]), color="black", label=r"Tendencia: Var($\langle O\rangle$)")
+            ax.plot(base, np.exp(data["deriv_slope"]*base+data["deriv_ord"]), color="red", label=rf"Tendencia: Var($\partial_{index}\langle O\rangle$)")
+
+        # Settings
+        ax.set_xlabel(r"$N$ qubits")
+        ax.set_title(rf"BP en VQE, variando el parámetro $\theta_{index}$")
+        ax.set_yscale("log")
+        ax.legend()
+        plt.show()
+
+    return data
