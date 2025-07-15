@@ -236,13 +236,13 @@ def build_ala(l: int, n: int, m: int):
     qc = QuantumCircuit(n)
     for i in range(l):
         if (i + 1) % 2 == 0:
-            qc.append(anz.block(m//2, param_prefix=f"θ_{i}_0"), range(0, m//2))
+            qc.append(block(m//2, param_prefix=f"θ_{i}_0"), range(0, m//2))
             for j in range(m//2, n-m//2, m):
-                qc.append(anz.block(m, param_prefix=f"θ_{i}_{j}"), range(j, j+m))
-            qc.append(anz.block(m//2, param_prefix=f"θ_{i}_{j+1}"), range(n-m//2, n))
+                qc.append(block(m, param_prefix=f"θ_{i}_{j}"), range(j, j+m))
+            qc.append(block(m//2, param_prefix=f"θ_{i}_{j+1}"), range(n-m//2, n))
         else:
             for j in range(0, n, m):
-                qc.append(anz.block(m, param_prefix=f"θ_{i}_{j}"), range(j, j+m))
+                qc.append(block(m, param_prefix=f"θ_{i}_{j}"), range(j, j+m))
     return qc
 
 
