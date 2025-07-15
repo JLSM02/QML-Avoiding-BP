@@ -10,7 +10,7 @@ from scipy.stats import linregress
 #from deap import base, creator, tools
 
 
-def VQE_minimization(ansatz_circuit, observable: SparsePauliOp, initial_guess: str = "zero", minimizer: str = "COBYLA", tol=None, fixseed: bool=False):
+def VQE_minimization(ansatz_circuit, observable: SparsePauliOp, initial_guess: str = "zero", minimizer: str = "COBYLA", tol=None, maxiter: int=10000, fixseed: bool=False):
     """
     Compute the VQE minimization algorithm.
     -----------------------------------------
