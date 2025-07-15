@@ -205,7 +205,45 @@ def build_k_UCCSD_ansatz(num_qubits, k=6, mapper=JordanWignerMapper()):
     return full_ansatz, full_ansatz.num_parameters
 
 
+# ====================================================================
+#                 Function to Alternating Layered Ansatz
+# ====================================================================
 
+def block(n: int, param_prefix: str = "θ"):
+    qc = QuantumCircuit(n)
+    for i in range(n):
+        aux = np.random.random()
+        if aux < 1/3:
+            qc.rx(Parameter(param_prefix + "_" + str(i)), i)
+        elif aux < 2/3:
+            qc.ry(Parameter(param_prefix + "_" + str(i)), i)
+        else:
+            qc.rz(Parameter(param_prefix + "_" + str(i)), i)
+
+    for i in range(0, n-1, 2):
+        qc.cx(i, i+1)
+    for i in range(1, n-1, 2):
+        qc.cx(i, i+1)
+    qc.name = "bloque"
+    return qc
+
+def build_ala(l: int, n: int, m: int):
+    if m % 2 != 0:
+        raise Exception("Parameter `m` must be an even number")
+    if n % m != 0:
+        raise Exception("Parameter `n` divided by `m` must be integer")
+    
+    qc = QuantumCircuit(n)
+    for i in range(l):
+        if (i + 1) % 2 == 0:
+            qc.append(anz.block(m//2, param_prefix=f"θ_{i}_0"), range(0, m//2))
+            for j in range(m//2, n-m//2, m):
+                qc.append(anz.block(m, param_prefix=f"θ_{i}_{j}"), range(j, j+m))
+            qc.append(anz.block(m//2, param_prefix=f"θ_{i}_{j+1}"), range(n-m//2, n))
+        else:
+            for j in range(0, n, m):
+                qc.append(anz.block(m, param_prefix=f"θ_{i}_{j}"), range(j, j+m))
+    return qc
 
 
 def build_Surf_ansatz(num_qubits: int, layers: int = 1) -> tuple[QuantumCircuit, int]:
