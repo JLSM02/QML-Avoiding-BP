@@ -51,7 +51,7 @@ def VQE_minimization(ansatz_circuit, observable: SparsePauliOp, initial_guess: s
     cost_history_dict = {"iters": 0, "cost_history": []}
 
     # Optimization in layers
-    res = minimize(cost_func, initial_param_vector, args=(ansatz_circuit, observable, estimator), method=minimizer, options={'maxiter': 10000}, tol=tol)
+    res = minimize(cost_func, initial_param_vector, args=(ansatz_circuit, observable, estimator), method=minimizer, options={'maxiter': maxiter}, tol=tol)
     return cost_history_dict
 
 
