@@ -1,15 +1,16 @@
 # imports
 import numpy as np
+import random
 import matplotlib.pyplot as plt
 import src.customFunc as cf
 from scipy.optimize import minimize
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.primitives import Estimator
 from scipy.stats import linregress
-from deap import base, creator, tools
+#from deap import base, creator, tools
 
 
-def VQE_minimization(ansatz_circuit, observable: SparsePauliOp, initial_guess: str = "zero", minimizer: str = "COBYLA", tol=None):
+def VQE_minimization(ansatz_circuit, observable: SparsePauliOp, initial_guess: str = "zero", minimizer: str = "COBYLA", tol=None, fixseed: bool=False):
     """
     Compute the VQE minimization algorithm.
     -----------------------------------------
@@ -22,6 +23,8 @@ def VQE_minimization(ansatz_circuit, observable: SparsePauliOp, initial_guess: s
     Returns:
         cost_history_dict (dict): iterations and their cost value
     """
+    if fixseed==True:
+        random.seed(42)
     estimator = Estimator()
     num_params=ansatz_circuit.num_parameters
 
